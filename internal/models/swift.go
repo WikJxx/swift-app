@@ -1,10 +1,11 @@
 package models
 
 type SwiftCode struct {
-	CountryISO2   string
-	SwiftCode     string
-	BankName      string
-	Address       string
-	CountryName   string
-	IsHeadquarter bool
+	Address       string      `json:"address"`
+	BankName      string      `json:"bankName"`
+	CountryISO2   string      `json:"countryISO2"`
+	CountryName   string      `json:"countryName"`
+	IsHeadquarter bool        `json:"isHeadquarter"`
+	SwiftCode     string      `json:"swiftCode"`
+	Branches      []SwiftCode `json:"branches,omitempty"`
 }

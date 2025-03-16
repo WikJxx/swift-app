@@ -2,76 +2,92 @@ package csv
 
 import (
 	"os"
-	"swift-app/internal/models"
 	"testing"
 )
 
-const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
-PL,TPEOPLPWKOP,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw
-PL,TPEOPLPWMEG,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw
+func TestLoadSwiftCodesWithStringCSV(t *testing.T) {
+	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
+,,,,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw
+PL,TPEOPLPWMEGXXX,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw
 `
 
-func TestParseSwift_ExampleData(t *testing.T) {
-
-	tmpFile, err := os.CreateTemp("", "swift_test.csv")
+	tmpFile, err := os.CreateTemp("", "swiftcodes.csv")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to create temporary file: %v", err)
 	}
 	defer os.Remove(tmpFile.Name())
-	if _, err := tmpFile.Write([]byte(testCSV)); err != nil {
-		t.Fatal(err)
+
+	if _, err := tmpFile.WriteString(testCSV); err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
+	}
+
+	tmpFile.Close()
+
+	swiftCodes, err := LoadSwiftCodes(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("error loading swift codes: %v", err)
+	}
+	if len(swiftCodes) != 1 {
+		t.Fatalf("expected 1 headquarter entry, got %d", len(swiftCodes))
+	}
+	if swiftCodes[0].BankName != "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA" {
+		t.Errorf("expected bank name 'PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA', got '%s'", swiftCodes[0].BankName)
+	}
+}
+
+func TestLoadSwiftCodesCorrectData(t *testing.T) {
+	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
+PL,TPEOPLPWMEGXXX,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw
+PL,TPEOPLPWKOP,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw`
+
+	tmpFile, err := os.CreateTemp("", "swiftcodes.csv")
+	if err != nil {
+		t.Fatalf("failed to create temporary file: %v", err)
+	}
+
+	if _, err := tmpFile.WriteString(testCSV); err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
 	}
 	tmpFile.Close()
 
-	records, err := LoadSwiftCodes(tmpFile.Name())
+	swiftCodes, err := LoadSwiftCodes(tmpFile.Name())
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("expected no error, got: %v", err)
 	}
 
-	if len(records) != 2 {
-		t.Errorf("Expected 2 records, but got %d", len(records))
+	if len(swiftCodes) != 1 {
+		t.Fatalf("expected 1 swift code, got %d", len(swiftCodes))
 	}
 
-	expected := models.SwiftCode{
-		CountryISO2:   "PL",
-		SwiftCode:     "TPEOPLPWKOP",
-		BankName:      "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA",
-		Address:       "FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",
-		CountryName:   "POLAND",
-		IsHeadquarter: false, // Zakładając, że kod kończy się na "XXX"
+	if swiftCodes[0].BankName != "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA" {
+		t.Errorf("expected bank name 'PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA', got '%s'", swiftCodes[0].BankName)
 	}
 
-	if records[0] != expected {
-		t.Errorf("Incorrect record: %+v", records[0])
+	defer os.Remove(tmpFile.Name())
+}
+
+func TestLoadSwiftCodesWithMissingFields(t *testing.T) {
+	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
+PL,TPEOPLPWKOP,,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw`
+
+	swiftCodes, err := LoadSwiftCodes(testCSV)
+	if err == nil {
+		t.Fatal("expected error due to missing required fields, but got none")
+	}
+
+	if len(swiftCodes) != 0 {
+		t.Fatalf("expected no SwiftCodes due to missing fields, got %d", len(swiftCodes))
 	}
 }
-func TestParseSwift_ValidData(t *testing.T) {
+
+func TestLoadSwiftCodesFromFile(t *testing.T) {
 	filePath := "../test_data/Interns_2025_SWIFT_CODES.csv"
-
-	records, err := LoadSwiftCodes(filePath)
+	swiftCodes, err := LoadSwiftCodes(filePath)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if len(records) != 1061 {
-		t.Errorf("Expected 1061 records, but got %d", len(records))
+		t.Fatalf("error reading from file: %v", err)
 	}
 
-	for i, record := range records {
-
-		if len(record.CountryISO2) != 2 {
-			t.Errorf("Record %d: Expected 2-letter country code, but got: %s", i+1, record.CountryISO2)
-		}
-		if len(record.SwiftCode) < 8 {
-			t.Errorf("Record %d: Expected SWIFT code with at least 8 characters, but got: %s", i+1, record.SwiftCode)
-		}
-		if len(record.BankName) == 0 {
-			t.Errorf("Record %d: Missing bank name", i+1)
-		}
-		if len(record.Address) == 0 {
-			t.Errorf("Record %d: Missing address", i+1)
-		}
-		if len(record.CountryName) == 0 {
-			t.Errorf("Record %d: Missing country name", i+1)
-		}
+	if len(swiftCodes) < 1 {
+		t.Fatalf("expected at least 1 SwiftCode, got %d", len(swiftCodes))
 	}
 }

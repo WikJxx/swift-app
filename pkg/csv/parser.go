@@ -31,12 +31,9 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 		swift := models.SwiftCode{
 			CountryISO2: strings.ToUpper(record[0]),
 			SwiftCode:   record[1],
-			CodeType:    record[2],
-			BankName:    record[3],
+			BankName:    strings.ToUpper(record[3]),
 			Address:     record[4],
-			TownName:    record[5],
 			CountryName: strings.ToUpper(record[6]),
-			TimeZone:    record[7],
 		}
 
 		swift.IsHeadquarter = strings.HasSuffix(strings.TrimSpace(record[1]), "XXX")

@@ -33,14 +33,12 @@ func TestParseSwift_ExampleData(t *testing.T) {
 	}
 
 	expected := models.SwiftCode{
-		CountryISO2: "PL",
-		SwiftCode:   "TPEOPLPWKOP",
-		CodeType:    "BIC11",
-		BankName:    "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA",
-		Address:     "FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",
-		TownName:    "WARSZAWA",
-		CountryName: "POLAND",
-		TimeZone:    "Europe/Warsaw",
+		CountryISO2:   "PL",
+		SwiftCode:     "TPEOPLPWKOP",
+		BankName:      "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA",
+		Address:       "FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",
+		CountryName:   "POLAND",
+		IsHeadquarter: false, // Zakładając, że kod kończy się na "XXX"
 	}
 
 	if records[0] != expected {
@@ -66,23 +64,14 @@ func TestParseSwift_ValidData(t *testing.T) {
 		if len(record.SwiftCode) < 8 {
 			t.Errorf("Record %d: Expected SWIFT code with at least 8 characters, but got: %s", i+1, record.SwiftCode)
 		}
-		if len(record.CodeType) != 5 {
-			t.Errorf("Record %d:Expected 5-letter code, but got: %s", i+1, record.CodeType)
-		}
 		if len(record.BankName) == 0 {
 			t.Errorf("Record %d: Missing bank name", i+1)
 		}
 		if len(record.Address) == 0 {
 			t.Errorf("Record %d: Missing address", i+1)
 		}
-		if len(record.TownName) == 0 {
-			t.Errorf("Record %d: Missing town name", i+1)
-		}
 		if len(record.CountryName) == 0 {
 			t.Errorf("Record %d: Missing country name", i+1)
-		}
-		if len(record.TimeZone) == 0 {
-			t.Errorf("Record %d: Missing time zone", i+1)
 		}
 	}
 }

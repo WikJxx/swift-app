@@ -52,7 +52,7 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	var skippedRecords []int
 
 	for i, record := range records[1:] {
-		if record[fieldIndexes["SWIFT CODE"]] == "" {
+		if record[fieldIndexes["SWIFT CODE"]] == "" || record[fieldIndexes["COUNTRY ISO2 CODE"]] == "" {
 			skippedRecords = append(skippedRecords, i+2)
 			continue
 		}

@@ -72,3 +72,6 @@ func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 
 	return nil
 }
+func GetCollection() *mongo.Collection {
+	return collection
+}

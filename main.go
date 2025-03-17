@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"swift-app/cmd/server"
 	"swift-app/database"
 	"swift-app/pkg/csv"
 )
@@ -24,4 +25,6 @@ func main() {
 	}
 
 	fmt.Println("Successfully saved SWIFT codes to MongoDB")
+
+	server.StartServer()
 }

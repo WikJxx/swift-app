@@ -13,7 +13,7 @@ func main() {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 
-	swiftCodes, err := csv.LoadSwiftCodes("./pkg/test_data/test.csv")
+	swiftCodes, err := csv.LoadSwiftCodes("./pkg/test_data/Interns_2025_SWIFT_CODES.csv")
 	if err != nil {
 		log.Fatalf("Error loading swift codes: %v", err)
 	}

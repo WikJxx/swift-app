@@ -15,9 +15,8 @@ var collection *mongo.Collection
 var isConnected bool
 
 func InitMongoDB(uri string, dbName string, collectionName string) error {
-	// Sprawdzenie, czy połączenie zostało już nawiązane
 	if isConnected {
-		return nil // Połączenie już istnieje, więc nic nie robimy
+		return nil
 	}
 
 	var err error
@@ -32,27 +31,22 @@ func InitMongoDB(uri string, dbName string, collectionName string) error {
 	}
 
 	collection = client.Database(dbName).Collection(collectionName)
-	isConnected = true // Ustawiamy flagę na true, po udanym połączeniu
+	isConnected = true
 	return nil
 }
 
 func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 	var docs []interface{}
 	for _, swiftCode := range swiftCodes {
-		// Sprawdź, czy dokument z danym swiftCode już istnieje
 		var existingDoc models.SwiftCode
 		err := collection.FindOne(context.Background(), bson.M{"swiftCode": swiftCode.SwiftCode}).Decode(&existingDoc)
 
-		// Jeśli dokument już istnieje (błąd jest mongo.ErrNoDocuments), to go pomijamy
 		if err == nil {
-			// Dokument już istnieje, więc go pomijamy
 			continue
 		} else if err != mongo.ErrNoDocuments {
-			// Błąd podczas szukania dokumentu
 			return fmt.Errorf("failed to check for existing document: %v", err)
 		}
 
-		// Dokument nie istnieje, więc dodajemy go do listy do zapisania
 		doc := bson.M{
 			"swiftCode":     swiftCode.SwiftCode,
 			"bankName":      swiftCode.BankName,
@@ -62,7 +56,6 @@ func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 			"isHeadquarter": swiftCode.IsHeadquarter,
 		}
 
-		// Dodaj branches tylko, jeśli są
 		if swiftCode.Branches != nil && len(*swiftCode.Branches) > 0 {
 			doc["branches"] = *swiftCode.Branches
 		}

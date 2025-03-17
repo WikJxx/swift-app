@@ -55,8 +55,8 @@ PL,TPEOPLPWKOP,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"F
 		t.Fatalf("expected no error, got: %v", err)
 	}
 
-	if len(swiftCodes) != 1 {
-		t.Fatalf("expected 1 swift code, got %d", len(swiftCodes))
+	if len(swiftCodes) != 2 {
+		t.Fatalf("expected 2 swift code, got %d", len(swiftCodes))
 	}
 
 	if swiftCodes[0].BankName != "PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA" {

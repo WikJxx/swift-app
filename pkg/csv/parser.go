@@ -33,7 +33,6 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 		"NAME":              -1,
 		"ADDRESS":           -1,
 		"COUNTRY NAME":      -1,
-		"TOWN NAME":         -1,
 	}
 
 	for i, field := range header {
@@ -49,7 +48,6 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 
 	var swiftCodes []models.SwiftCode
 	headquartersMap := make(map[string]*models.SwiftCode)
-	pendingBranches := make(map[string][]models.SwiftCode)
 
 	var skippedRecords []int
 
@@ -59,60 +57,52 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 			continue
 		}
 
-		address := "Unknown Address"
-		if fieldIndexes["ADDRESS"] != -1 && record[fieldIndexes["ADDRESS"]] != "" {
-			address = record[fieldIndexes["ADDRESS"]]
+		swiftCode := strings.ToUpper(record[fieldIndexes["SWIFT CODE"]])
+		countryISO2 := "Unknown"
+		if fieldIndexes["COUNTRY ISO2 CODE"] != -1 {
+			countryISO2 = strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])
 		}
 
-		townName := "Unknown Town"
-		if fieldIndexes["TOWN NAME"] != -1 && record[fieldIndexes["TOWN NAME"]] != "" {
-			townName = record[fieldIndexes["TOWN NAME"]]
-		}
-		if address == "Unknown Address" && townName != "Unknown Town" {
-			address = townName
-		}
-
-		bankName := "Unknown Bank Name"
-		if fieldIndexes["NAME"] != -1 && record[fieldIndexes["NAME"]] != "" {
+		bankName := "Unknown"
+		if fieldIndexes["NAME"] != -1 {
 			bankName = record[fieldIndexes["NAME"]]
 		}
 
-		countryName := "Unknown Country Name"
-		if fieldIndexes["COUNTRY NAME"] != -1 && record[fieldIndexes["COUNTRY NAME"]] != "" {
+		address := "Unknown Address"
+		if fieldIndexes["ADDRESS"] != -1 {
+			address = record[fieldIndexes["ADDRESS"]]
+		}
+
+		countryName := "Unknown Country"
+		if fieldIndexes["COUNTRY NAME"] != -1 {
 			countryName = record[fieldIndexes["COUNTRY NAME"]]
 		}
 
-		countryISO2Code := "Unknown Country Code"
-		if fieldIndexes["COUNTRY ISO2 CODE"] != -1 && record[fieldIndexes["COUNTRY ISO2 CODE"]] != "" {
-			countryISO2Code = record[fieldIndexes["COUNTRY ISO2 CODE"]]
-		}
+		isHeadquarter := strings.HasSuffix(swiftCode, "XXX")
 
 		swift := models.SwiftCode{
-			CountryISO2:   strings.ToUpper(countryISO2Code),
-			SwiftCode:     strings.ToUpper(record[fieldIndexes["SWIFT CODE"]]),
+			SwiftCode:     swiftCode,
+			CountryISO2:   countryISO2,
 			BankName:      bankName,
 			Address:       address,
 			CountryName:   countryName,
-			IsHeadquarter: strings.HasSuffix(strings.TrimSpace(record[fieldIndexes["SWIFT CODE"]]), "XXX"),
+			IsHeadquarter: isHeadquarter,
 		}
 
-		if swift.IsHeadquarter {
-			headquartersMap[swift.SwiftCode] = &swift
-
-			if branches, exists := pendingBranches[swift.SwiftCode[:8]]; exists {
-				swift.Branches = append(swift.Branches, branches...)
-				delete(pendingBranches, swift.SwiftCode[:8])
-			}
-
-			swiftCodes = append(swiftCodes, swift)
+		if isHeadquarter {
+			emptyBranches := []string{}
+			swift.Branches = &emptyBranches
+			headquartersMap[swiftCode] = &swift
 		} else {
-			headquarterCode := swift.SwiftCode[:8] + "XXX"
+			headquarterCode := swiftCode[:8] + "XXX"
 			if headquarter, exists := headquartersMap[headquarterCode]; exists {
-				headquarter.Branches = append(headquarter.Branches, swift)
-			} else {
-				pendingBranches[swift.SwiftCode[:8]] = append(pendingBranches[swift.SwiftCode[:8]], swift)
+				*headquarter.Branches = append(*headquarter.Branches, swiftCode)
 			}
+			swift.Branches = nil
 		}
+
+		swiftCodes = append(swiftCodes, swift)
+
 	}
 
 	if len(skippedRecords) > 0 {

@@ -74,34 +74,46 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 		countryName = swiftCodes[0].CountryName
 	}
 
-	for _, headquarter := range swiftCodes {
-		if headquarter.IsHeadquarter {
-			for _, branch := range headquarter.Branches {
-				exists := false
-				for _, existing := range swiftCodes {
-					if existing.SwiftCode == branch.SwiftCode {
-						exists = true
-						break
-					}
-				}
+	var allSwiftCodes []models.SwiftCode
+	var allBranchCodes []models.SwiftCode
+	swiftCodeSet := make(map[string]bool)
 
-				if !exists {
-					swiftCodes = append(swiftCodes, models.SwiftCode{
+	for _, swiftCode := range swiftCodes {
+		if swiftCode.IsHeadquarter {
+			if _, exists := swiftCodeSet[swiftCode.SwiftCode]; !exists {
+				allSwiftCodes = append(allSwiftCodes, models.SwiftCode{
+					Address:       swiftCode.Address,
+					BankName:      swiftCode.BankName,
+					CountryISO2:   swiftCode.CountryISO2,
+					IsHeadquarter: swiftCode.IsHeadquarter,
+					SwiftCode:     swiftCode.SwiftCode,
+				})
+				swiftCodeSet[swiftCode.SwiftCode] = true
+			}
+		}
+
+		if len(swiftCode.Branches) > 0 {
+			for _, branch := range swiftCode.Branches {
+				if _, exists := swiftCodeSet[branch.SwiftCode]; !exists {
+					allBranchCodes = append(allBranchCodes, models.SwiftCode{
 						Address:       branch.Address,
 						BankName:      branch.BankName,
 						CountryISO2:   branch.CountryISO2,
 						IsHeadquarter: branch.IsHeadquarter,
 						SwiftCode:     branch.SwiftCode,
 					})
+					swiftCodeSet[branch.SwiftCode] = true
 				}
 			}
 		}
 	}
 
+	allSwiftCodes = append(allSwiftCodes, allBranchCodes...)
+
 	response := &models.CountrySwiftCodesResponse{
 		CountryISO2: countryISO2,
 		CountryName: countryName,
-		SwiftCodes:  swiftCodes,
+		SwiftCodes:  allSwiftCodes,
 	}
 
 	return response, nil

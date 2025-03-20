@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"swift-app/internal/models"
@@ -67,9 +68,21 @@ func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 
 	message, err := swiftService.AddSwiftCode(&swiftCodeRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": message["message"]}) // 👈 Teraz zwraca Twój komunikat!
+		c.JSON(http.StatusInternalServerError, gin.H{"error": message["message"]})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": message["message"]})
+}
+
+func DeleteSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
+	swiftCode := c.Param("swift-code")
+
+	deletedCount, err := swiftService.DeleteSwiftCode(swiftCode)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Deleted %d records", deletedCount)})
 }

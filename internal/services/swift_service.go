@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"swift-app/internal/models"
@@ -176,12 +177,12 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 		}
 	}
 
-	branch := models.SwiftBranch{
-		SwiftCode:     swiftCodeRequest.SwiftCode,
-		BankName:      swiftCodeRequest.BankName,
-		Address:       swiftCodeRequest.Address,
-		CountryISO2:   swiftCodeRequest.CountryISO2,
-		IsHeadquarter: false,
+	branch := bson.M{
+		"swiftCode":     swiftCodeRequest.SwiftCode,
+		"bankName":      swiftCodeRequest.BankName,
+		"address":       swiftCodeRequest.Address,
+		"countryISO2":   swiftCodeRequest.CountryISO2,
+		"isHeadquarter": false,
 	}
 
 	_, err = s.DB.UpdateOne(
@@ -194,4 +195,40 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 	}
 
 	return map[string]string{"message": "Branch SWIFT code added to headquarter successfully"}, nil
+}
+
+func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (int64, error) {
+	swiftCode = strings.ToUpper(swiftCode)
+
+	var headquarter models.SwiftCode
+	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode, "isHeadquarter": true}).Decode(&headquarter)
+	if err == nil {
+		result, err := s.DB.DeleteMany(context.Background(), bson.M{
+			"$or": []bson.M{
+				{"swiftCode": swiftCode},
+				{"swiftCode": bson.M{"$regex": fmt.Sprintf("^%s", swiftCode[:8])}},
+			},
+		})
+		if err != nil {
+			return 0, fmt.Errorf("error deleting headquarter and branches: %v", err)
+		}
+		if result.DeletedCount == 0 {
+			return 0, errors.New("SWIFT code not found")
+		}
+		return result.DeletedCount, nil
+	}
+
+	updateResult, err := s.DB.UpdateOne(
+		context.Background(),
+		bson.M{"branches.swiftCode": swiftCode},
+		bson.M{"$pull": bson.M{"branches": bson.M{"swiftCode": swiftCode}}},
+	)
+	if err != nil {
+		return 0, fmt.Errorf("error removing branch: %v", err)
+	}
+	if updateResult.MatchedCount == 0 {
+		return 0, errors.New("SWIFT code not found")
+	}
+
+	return updateResult.ModifiedCount, nil
 }

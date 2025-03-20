@@ -31,7 +31,10 @@ func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftC
 	filter := bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}
 	err = s.DB.FindOne(context.Background(), filter).Decode(&headquarter)
 	if err != nil {
-		return nil, fmt.Errorf("no headquarter found for swiftCode %s", swiftCode)
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("headquarter not found for SWIFT code %s. Please add a headquarter before adding branches", headquarterSwiftCode)
+		}
+		return nil, fmt.Errorf("database error while searching for headquarter: %v", err)
 	}
 
 	for _, branch := range headquarter.Branches {
@@ -117,4 +120,78 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 	}
 
 	return response, nil
+}
+
+func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map[string]string, error) {
+	if len(swiftCodeRequest.SwiftCode) > 11 {
+		return map[string]string{"message": "SWIFT code cannot be longer than 11 characters"}, fmt.Errorf("SWIFT code cannot be longer than 11 characters")
+	}
+	swiftCodeRequest.SwiftCode = strings.ToUpper(swiftCodeRequest.SwiftCode)
+	swiftCodeRequest.CountryISO2 = strings.ToUpper(swiftCodeRequest.CountryISO2)
+	swiftCodeRequest.CountryName = strings.ToUpper(swiftCodeRequest.CountryName)
+
+	swiftCode := bson.M{
+		"swiftCode":     swiftCodeRequest.SwiftCode,
+		"bankName":      swiftCodeRequest.BankName,
+		"address":       swiftCodeRequest.Address,
+		"countryISO2":   swiftCodeRequest.CountryISO2,
+		"countryName":   swiftCodeRequest.CountryName,
+		"isHeadquarter": swiftCodeRequest.IsHeadquarter,
+	}
+
+	if swiftCodeRequest.IsHeadquarter {
+		if !strings.HasSuffix(swiftCodeRequest.SwiftCode, "XXX") {
+			return map[string]string{"message": "Headquarter SWIFT code must end with 'XXX'"}, fmt.Errorf("headquarter SWIFT code must end with 'XXX'")
+		}
+
+		existingHeadquarter := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCodeRequest.SwiftCode})
+		if existingHeadquarter.Err() == nil {
+			return map[string]string{"message": "Headquarter SWIFT code already exists"}, fmt.Errorf("headquarter SWIFT code already exists")
+		}
+
+		_, err := s.DB.InsertOne(context.Background(), swiftCode)
+		if err != nil {
+			return map[string]string{"message": "Error inserting SWIFT code into the database"}, err
+		}
+		return map[string]string{"message": "Headquarter SWIFT code added successfully"}, nil
+	}
+
+	if strings.HasSuffix(swiftCodeRequest.SwiftCode, "XXX") {
+		return map[string]string{"message": "Branch SWIFT code cannot end with 'XXX'"}, fmt.Errorf("branch SWIFT code cannot end with 'XXX'")
+	}
+	headquarterSwiftCode := swiftCodeRequest.SwiftCode[:8] + "XXX"
+	var headquarter models.SwiftCode
+	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}).Decode(&headquarter)
+	if err != nil {
+		return map[string]string{"message": "Headquarter not found for the branch SWIFT code"}, err
+	}
+
+	if swiftCodeRequest.CountryISO2 != headquarter.CountryISO2 {
+		return map[string]string{"message": "Branch SWIFT code countryISO does not match headquarter countryISO"}, fmt.Errorf("branch SWIFT code countryISO does not match headquarter countryISO")
+	}
+
+	for _, branch := range headquarter.Branches {
+		if branch.SwiftCode == swiftCodeRequest.SwiftCode {
+			return map[string]string{"message": "Branch SWIFT code already exists"}, fmt.Errorf("branch SWIFT code already exists")
+		}
+	}
+
+	branch := models.SwiftBranch{
+		SwiftCode:     swiftCodeRequest.SwiftCode,
+		BankName:      swiftCodeRequest.BankName,
+		Address:       swiftCodeRequest.Address,
+		CountryISO2:   swiftCodeRequest.CountryISO2,
+		IsHeadquarter: false,
+	}
+
+	_, err = s.DB.UpdateOne(
+		context.Background(),
+		bson.M{"swiftCode": headquarter.SwiftCode},
+		bson.M{"$push": bson.M{"branches": branch}},
+	)
+	if err != nil {
+		return map[string]string{"message": "Error updating headquarter with branch"}, err
+	}
+
+	return map[string]string{"message": "Branch SWIFT code added to headquarter successfully"}, nil
 }

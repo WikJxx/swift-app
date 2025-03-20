@@ -1,7 +1,8 @@
+// router.go
 package router
 
 import (
-	"net/http"
+	v1 "swift-app/api/v1" // Importowanie pakietu v1
 	"swift-app/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -12,29 +13,21 @@ func handleError(c *gin.Context, err error, statusCode int) {
 }
 
 func SetupRoutes(r *gin.Engine, swiftService *services.SwiftCodeService) {
-	v1 := r.Group("/v1/swift-codes")
+	api := r.Group("/v1/swift-codes")
 	{
-		v1.GET("/:swift-code", func(c *gin.Context) {
-			swiftCode := c.Param("swift-code")
-			swiftCodeDetails, err := swiftService.GetSwiftCodeDetails(swiftCode)
-			if err != nil {
-				handleError(c, err, http.StatusNotFound)
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{
-				"swiftCode": swiftCodeDetails,
-			})
+		// Użycie funkcji GetSwiftCode z pakietu v1
+		api.GET("/:swift-code", func(c *gin.Context) {
+			v1.GetSwiftCode(c, swiftService) // Wywołanie GetSwiftCode z v1
 		})
 
-		v1.GET("/country/:countryISO2code", func(c *gin.Context) {
-			countryISO2 := c.Param("countryISO2code")
-			swiftCodesResponse, err := swiftService.GetSwiftCodesByCountry(countryISO2)
-			if err != nil {
-				handleError(c, err, http.StatusNotFound)
-				return
-			}
+		// Użycie funkcji GetSwiftCodesByCountry z pakietu v1
+		api.GET("/country/:countryISO2code", func(c *gin.Context) {
+			v1.GetSwiftCodesByCountry(c, swiftService) // Wywołanie GetSwiftCodesByCountry z v1
+		})
 
-			c.JSON(http.StatusOK, swiftCodesResponse)
+		// Użycie funkcji AddSwiftCode z pakietu v1
+		api.POST("/", func(c *gin.Context) {
+			v1.AddSwiftCode(c, swiftService) // Wywołanie AddSwiftCode z v1
 		})
 	}
 }

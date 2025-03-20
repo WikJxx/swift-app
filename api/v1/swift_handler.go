@@ -57,3 +57,19 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 
 	c.JSON(http.StatusOK, response)
 }
+
+func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
+	var swiftCodeRequest models.SwiftCode
+	if err := c.ShouldBindJSON(&swiftCodeRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
+		return
+	}
+
+	message, err := swiftService.AddSwiftCode(&swiftCodeRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": message["message"]}) // 👈 Teraz zwraca Twój komunikat!
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": message["message"]})
+}

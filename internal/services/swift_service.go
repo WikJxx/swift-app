@@ -3,64 +3,106 @@ package services
 import (
 	"context"
 	"fmt"
-	"swift-app/database"
+	"strings"
 	"swift-app/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func FindSwiftByCode(code string) (*models.SwiftCode, error) {
-	collection := database.GetCollection()
-
-	var swift models.SwiftCode
-	err := collection.FindOne(context.Background(), bson.M{"swiftCode": code}).Decode(&swift)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("SWIFT Code not found")
-		}
-		return nil, err
-	}
-
-	return &swift, nil
+type SwiftCodeService struct {
+	DB *mongo.Collection
 }
 
-func FindSwiftCodesByCountry(countryISO2 string) ([]models.SwiftBranchResp, string, error) {
-	collection := database.GetCollection()
+func NewSwiftCodeService(db *mongo.Collection) *SwiftCodeService {
+	return &SwiftCodeService{DB: db}
+}
 
-	var countryResult models.SwiftCode
-	err := collection.FindOne(context.Background(), bson.M{"countryISO2": countryISO2}).Decode(&countryResult)
-	if err != nil {
-		return nil, "", fmt.Errorf("Failed to fetch country name")
+func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftCode, error) {
+	var swiftCodeDetails models.SwiftCode
+
+	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode}).Decode(&swiftCodeDetails)
+	if err == nil {
+		return &swiftCodeDetails, nil
 	}
 
-	countryName := countryResult.CountryName
-
-	cursor, err := collection.Find(context.Background(), bson.M{"countryISO2": countryISO2})
+	headquarterSwiftCode := swiftCode[:8] + "XXX"
+	var headquarter models.SwiftCode
+	filter := bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}
+	err = s.DB.FindOne(context.Background(), filter).Decode(&headquarter)
 	if err != nil {
-		return nil, "", fmt.Errorf("Failed to fetch SWIFT codes")
+		return nil, fmt.Errorf("no headquarter found for swiftCode %s", swiftCode)
+	}
+
+	for _, branch := range headquarter.Branches {
+		if branch.SwiftCode == swiftCode {
+
+			return &models.SwiftCode{
+				Address:       branch.Address,
+				BankName:      branch.BankName,
+				CountryISO2:   branch.CountryISO2,
+				CountryName:   headquarter.CountryName,
+				IsHeadquarter: branch.IsHeadquarter,
+				SwiftCode:     branch.SwiftCode,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no branch found for swiftCode %s", swiftCode)
+}
+
+func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.CountrySwiftCodesResponse, error) {
+	countryISO2 = strings.ToUpper(countryISO2)
+
+	cursor, err := s.DB.Find(context.Background(), bson.M{"countryISO2": countryISO2})
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving SWIFT codes for country %s: %v", countryISO2, err)
 	}
 	defer cursor.Close(context.Background())
 
-	var swiftCodes []models.SwiftBranchResp
-	for cursor.Next(context.Background()) {
-		var swift models.SwiftCode
-		if err := cursor.Decode(&swift); err != nil {
-			return nil, "", fmt.Errorf("Failed to decode SWIFT data")
-		}
-
-		swiftCodes = append(swiftCodes, models.SwiftBranchResp{
-			Address:       swift.Address,
-			BankName:      swift.BankName,
-			CountryISO2:   swift.CountryISO2,
-			IsHeadquarter: swift.IsHeadquarter,
-			SwiftCode:     swift.SwiftCode,
-		})
+	var swiftCodes []models.SwiftCode
+	if err = cursor.All(context.Background(), &swiftCodes); err != nil {
+		return nil, fmt.Errorf("error decoding SWIFT codes for country %s: %v", countryISO2, err)
 	}
 
 	if len(swiftCodes) == 0 {
-		return nil, "", fmt.Errorf("No SWIFT codes found for this country")
+		return nil, fmt.Errorf("no swift codes found for country %s", countryISO2)
 	}
 
-	return swiftCodes, countryName, nil
+	var countryName string
+	if len(swiftCodes) > 0 {
+		countryName = swiftCodes[0].CountryName
+	}
+
+	for _, headquarter := range swiftCodes {
+		if headquarter.IsHeadquarter {
+			for _, branch := range headquarter.Branches {
+				exists := false
+				for _, existing := range swiftCodes {
+					if existing.SwiftCode == branch.SwiftCode {
+						exists = true
+						break
+					}
+				}
+
+				if !exists {
+					swiftCodes = append(swiftCodes, models.SwiftCode{
+						Address:       branch.Address,
+						BankName:      branch.BankName,
+						CountryISO2:   branch.CountryISO2,
+						IsHeadquarter: branch.IsHeadquarter,
+						SwiftCode:     branch.SwiftCode,
+					})
+				}
+			}
+		}
+	}
+
+	response := &models.CountrySwiftCodesResponse{
+		CountryISO2: countryISO2,
+		CountryName: countryName,
+		SwiftCodes:  swiftCodes,
+	}
+
+	return response, nil
 }

@@ -9,17 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetSwiftCode(c *gin.Context) {
+func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	swiftCode := c.Param("swift-code")
 	swiftCode = strings.ToUpper(swiftCode)
 
-	swift, err := services.FindSwiftByCode(swiftCode)
+	swift, err := swiftService.GetSwiftCodeDetails(swiftCode)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	response := models.SwiftResponse{
+	response := models.SwiftCode{
 		Address:       swift.Address,
 		BankName:      swift.BankName,
 		CountryISO2:   swift.CountryISO2,
@@ -28,42 +28,31 @@ func GetSwiftCode(c *gin.Context) {
 		SwiftCode:     swift.SwiftCode,
 	}
 
-	if swift.IsHeadquarter && swift.Branches != nil && len(*swift.Branches) > 0 {
-		var branches []models.SwiftBranchResp
-		for _, branchSwiftCode := range *swift.Branches {
-			branch, err := services.FindSwiftByCode(branchSwiftCode)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch branch data"})
-				return
-			}
-			branches = append(branches, models.SwiftBranchResp{
-				Address:       branch.Address,
-				BankName:      branch.BankName,
-				CountryISO2:   branch.CountryISO2,
-				IsHeadquarter: branch.IsHeadquarter,
-				SwiftCode:     branch.SwiftCode,
-			})
-		}
-		response.Branches = branches
+	if swift.IsHeadquarter && len(swift.Branches) > 0 {
+		response.Branches = swift.Branches
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
-func GetSwiftCodesByCountry(c *gin.Context) {
-	countryISO2 := c.Param("countryISO2code")
-	countryISO2 = strings.ToUpper(countryISO2)
+func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeService) {
+	countryISO2 := strings.ToUpper(c.Param("countryISO2code"))
 
-	swiftCodes, countryName, err := services.FindSwiftCodesByCountry(countryISO2)
+	swiftCodesResponse, err := swiftService.GetSwiftCodesByCountry(countryISO2)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	response := gin.H{
-		"countryISO2": countryISO2,
-		"countryName": countryName,
-		"swiftCodes":  swiftCodes,
+	var countryName string
+	if len(swiftCodesResponse.SwiftCodes) > 0 {
+		countryName = swiftCodesResponse.SwiftCodes[0].CountryName
+	}
+
+	response := models.CountrySwiftCodesResponse{
+		CountryISO2: countryISO2,
+		CountryName: countryName,
+		SwiftCodes:  swiftCodesResponse.SwiftCodes,
 	}
 
 	c.JSON(http.StatusOK, response)

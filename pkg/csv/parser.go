@@ -48,12 +48,12 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 
 	var swiftCodes []models.SwiftCode
 	headquartersMap := make(map[string]*models.SwiftCode)
+	branchQueue := make([]*models.SwiftBranch, 0)
+	uniqueHQ := make(map[string]bool)
+	uniqueBranches := make(map[string]bool)
 
-	var skippedRecords []int
-
-	for i, record := range records[1:] {
+	for _, record := range records[1:] {
 		if record[fieldIndexes["SWIFT CODE"]] == "" || record[fieldIndexes["COUNTRY ISO2 CODE"]] == "" {
-			skippedRecords = append(skippedRecords, i+2)
 			continue
 		}
 
@@ -80,33 +80,61 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 
 		isHeadquarter := strings.HasSuffix(swiftCode, "XXX")
 
-		swift := models.SwiftCode{
-			SwiftCode:     swiftCode,
-			CountryISO2:   countryISO2,
-			BankName:      bankName,
-			Address:       address,
-			CountryName:   countryName,
-			IsHeadquarter: isHeadquarter,
-		}
-
 		if isHeadquarter {
-			emptyBranches := []string{}
-			swift.Branches = &emptyBranches
-			headquartersMap[swiftCode] = &swift
-		} else {
-			headquarterCode := swiftCode[:8] + "XXX"
-			if headquarter, exists := headquartersMap[headquarterCode]; exists {
-				*headquarter.Branches = append(*headquarter.Branches, swiftCode)
+			if _, exists := uniqueHQ[swiftCode]; exists {
+				continue
 			}
-			swift.Branches = nil
+
+			uniqueHQ[swiftCode] = true
+
+			swift := models.SwiftCode{
+				SwiftCode:     swiftCode,
+				CountryISO2:   countryISO2,
+				BankName:      bankName,
+				Address:       address,
+				CountryName:   countryName,
+				IsHeadquarter: isHeadquarter,
+				Branches:      []models.SwiftBranch{},
+			}
+
+			headquartersMap[swiftCode] = &swift
+
+			for i := len(branchQueue) - 1; i >= 0; i-- {
+				branch := branchQueue[i]
+				if branch.SwiftCode[:8]+"XXX" == swiftCode {
+					swift.Branches = append(swift.Branches, *branch)
+					branchQueue = append(branchQueue[:i], branchQueue[i+1:]...)
+				}
+			}
+
+			swiftCodes = append(swiftCodes, swift)
+		} else {
+			if _, exists := uniqueBranches[swiftCode]; exists {
+				continue
+			}
+
+			uniqueBranches[swiftCode] = true
+
+			branch := models.SwiftBranch{
+				SwiftCode:     swiftCode,
+				BankName:      bankName,
+				Address:       address,
+				CountryISO2:   countryISO2,
+				IsHeadquarter: false,
+			}
+
+			if hq, found := headquartersMap[swiftCode[:8]+"XXX"]; found {
+				hq.Branches = append(hq.Branches, branch)
+			} else {
+				branchQueue = append(branchQueue, &branch)
+			}
 		}
-
-		swiftCodes = append(swiftCodes, swift)
-
 	}
 
-	if len(skippedRecords) > 0 {
-		fmt.Printf("Warning: skipped records with missing SWIFT CODE on lines: %v\n", skippedRecords)
+	if len(branchQueue) > 0 {
+		for _, branch := range branchQueue {
+			fmt.Printf("Warning: Branch %s does not have a matching headquarter.\n", branch.SwiftCode)
+		}
 	}
 
 	return swiftCodes, nil

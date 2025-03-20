@@ -31,47 +31,85 @@ func InitMongoDB(uri string, dbName string, collectionName string) error {
 	}
 
 	collection = client.Database(dbName).Collection(collectionName)
+
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{"swiftCode": 1},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = collection.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		return fmt.Errorf("failed to create unique index: %v", err)
+	}
+
 	isConnected = true
 	return nil
 }
 
 func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 	var docs []interface{}
+	headquarters := make(map[string]*models.SwiftCode)
+
 	for _, swiftCode := range swiftCodes {
-		var existingDoc models.SwiftCode
-		err := collection.FindOne(context.Background(), bson.M{"swiftCode": swiftCode.SwiftCode}).Decode(&existingDoc)
-
-		if err == nil {
-			continue
-		} else if err != mongo.ErrNoDocuments {
-			return fmt.Errorf("failed to check for existing document: %v", err)
+		if swiftCode.IsHeadquarter {
+			headquarters[swiftCode.SwiftCode] = &swiftCode
+		} else {
+			if headquarter, exists := headquarters[swiftCode.SwiftCode]; exists {
+				headquarter.Branches = append(headquarter.Branches, models.SwiftBranch{
+					Address:       swiftCode.Address,
+					BankName:      swiftCode.BankName,
+					CountryISO2:   swiftCode.CountryISO2,
+					IsHeadquarter: swiftCode.IsHeadquarter,
+					SwiftCode:     swiftCode.SwiftCode,
+				})
+			} else {
+				docs = append(docs, bson.M{
+					"swiftCode":     swiftCode.SwiftCode,
+					"bankName":      swiftCode.BankName,
+					"address":       swiftCode.Address,
+					"countryISO2":   swiftCode.CountryISO2,
+					"countryName":   swiftCode.CountryName,
+					"isHeadquarter": swiftCode.IsHeadquarter,
+				})
+			}
 		}
-
+	}
+	for _, headquarter := range headquarters {
 		doc := bson.M{
-			"swiftCode":     swiftCode.SwiftCode,
-			"bankName":      swiftCode.BankName,
-			"address":       swiftCode.Address,
-			"countryISO2":   swiftCode.CountryISO2,
-			"countryName":   swiftCode.CountryName,
-			"isHeadquarter": swiftCode.IsHeadquarter,
+			"swiftCode":     headquarter.SwiftCode,
+			"bankName":      headquarter.BankName,
+			"address":       headquarter.Address,
+			"countryISO2":   headquarter.CountryISO2,
+			"countryName":   headquarter.CountryName,
+			"isHeadquarter": headquarter.IsHeadquarter,
 		}
 
-		if swiftCode.Branches != nil && len(*swiftCode.Branches) > 0 {
-			doc["branches"] = *swiftCode.Branches
+		if len(headquarter.Branches) > 0 {
+			doc["branches"] = headquarter.Branches
 		}
 
 		docs = append(docs, doc)
 	}
 
 	if len(docs) > 0 {
-		_, err := collection.InsertMany(context.Background(), docs)
+		_, err := collection.InsertMany(context.Background(), docs, options.InsertMany().SetOrdered(false))
 		if err != nil {
-			return fmt.Errorf("failed to insert documents into MongoDB: %v", err)
+			if bulkWriteErr, ok := err.(mongo.BulkWriteException); ok {
+				for _, writeError := range bulkWriteErr.WriteErrors {
+					if writeError.Code == 11000 {
+						fmt.Printf("Duplicate key error for swiftCode: %v\n", writeError)
+					} else {
+						return fmt.Errorf("failed to insert documents into MongoDB: %v", err)
+					}
+				}
+			} else {
+				return fmt.Errorf("failed to insert documents into MongoDB: %v", err)
+			}
 		}
 	}
 
 	return nil
 }
+
 func GetCollection() *mongo.Collection {
 	return collection
 }

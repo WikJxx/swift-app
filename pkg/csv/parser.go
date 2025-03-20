@@ -62,6 +62,10 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 			fmt.Printf("Warning: SWIFT code %s is longer than 11 characters\n", swiftCode)
 			continue
 		}
+		if len(swiftCode) < 8 {
+			fmt.Printf("Warning: SWIFT code %s is smaller than 8 characters\n", swiftCode)
+			continue
+		}
 		countryISO2 := "Unknown"
 		if fieldIndexes["COUNTRY ISO2 CODE"] != -1 {
 			countryISO2 = strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])

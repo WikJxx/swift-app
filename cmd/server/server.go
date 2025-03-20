@@ -11,7 +11,7 @@ import (
 )
 
 func StartServer() {
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
 	swiftService := services.NewSwiftCodeService(database.GetCollection())

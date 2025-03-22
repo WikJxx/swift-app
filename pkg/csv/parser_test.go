@@ -88,6 +88,84 @@ PL,TPEOPLPGXXX,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"F
 	}
 }
 
+func TestLoadSwiftCodesFileNotFound(t *testing.T) {
+	_, err := LoadSwiftCodes("non_existent_file.csv")
+	if err == nil {
+		t.Fatal("expected an error for non-existent file, but got none")
+	}
+}
+
+func TestLoadSwiftCodesInvalidFormat(t *testing.T) {
+	const invalidCSV = `COUNTRY ISO2 CODE;SWIFT CODE;TYPE;NAME;ADDRESS;TOWN NAME;COUNTRY NAME;TIMEZONE
+PL;TPEOPLPWKOP;BIC11;PEKAO;"FOREST ZUBRA 1";WARSZAWA;POLAND;Europe/Warsaw`
+
+	tmpFile, err := os.CreateTemp("", "invalid_format.csv")
+	if err != nil {
+		t.Fatalf("failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(invalidCSV); err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
+	}
+	tmpFile.Close()
+
+	_, err = LoadSwiftCodes(tmpFile.Name())
+	if err == nil {
+		t.Fatal("expected an error due to invalid CSV format, but got none")
+	}
+}
+
+// func TestLoadSwiftCodesLargeFile(t *testing.T) {
+// 	const largeRecord = "COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE\nPL,TPEOPLPGXXX,BIC11,PEKAO,\"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066\",WARSZAWA,POLAND,Europe/Warsaw\n"
+// 	tmpFile, err := os.CreateTemp("", "large_swiftcodes.csv")
+
+// 	if err != nil {
+// 		t.Fatalf("failed to create temporary file: %v", err)
+// 	}
+// 	defer os.Remove(tmpFile.Name())
+
+// 	for i := 0; i < 10000; i++ { // 10k rekordów
+// 		if _, err := tmpFile.WriteString(largeRecord); err != nil {
+// 			t.Fatalf("failed to write to temporary file: %v", err)
+// 		}
+// 	}
+// 	tmpFile.Close()
+
+// 	swiftCodes, err := LoadSwiftCodes(tmpFile.Name())
+// 	if err != nil {
+// 		t.Fatalf("error loading large swift code file: %v", err)
+// 	}
+
+// 	if len(swiftCodes) == 0 {
+// 		t.Fatalf("expected swift codes, got 0")
+// 	}
+// }
+
+func TestLoadSwiftCodesEmptyAddress(t *testing.T) {
+	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
+PL,TPEOPLPGXXX,BIC11,PEKAO,,WARSZAWA,POLAND,Europe/Warsaw`
+
+	tmpFile, err := os.CreateTemp("", "empty_address.csv")
+	if err != nil {
+		t.Fatalf("failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(testCSV); err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
+	}
+	tmpFile.Close()
+
+	swiftCodes, err := LoadSwiftCodes(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("error loading swift codes: %v", err)
+	}
+
+	if swiftCodes[0].Address != "" {
+		t.Errorf("expected empty address, got '%s'", swiftCodes[0].Address)
+	}
+}
 func TestLoadSwiftCodesCorrectData(t *testing.T) {
 	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
 PL,TPEOPLPWKOP,BIC11,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066",WARSZAWA,POLAND,Europe/Warsaw

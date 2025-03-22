@@ -7,10 +7,10 @@ import (
 
 func TestLoadSwiftCodes(t *testing.T) {
 	data := `SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME
-AAAABBBXXX,US,First Bank,123 First St,USA
-AAAABBBXXX,US,First Bank,123 First St,USA
-AAAABBB123,US,Second Bank,456 Second St,USA
-AAAABBB123,US,Second Bank,456 Second St,USA
+AAAABBBXXX,US,First Bank,123 First St,United States
+AAAABBBXXX,US,First Bank,123 First St,United States
+AAAABBB123,US,Second Bank,456 Second St,United States
+AAAABBB123,US,Second Bank,456 Second St,United States
 `
 
 	tmpFile, err := os.CreateTemp("", "test_swift_codes_*.csv")

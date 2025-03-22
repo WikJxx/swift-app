@@ -141,7 +141,7 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 		return map[string]string{"message": "Invalid country ISO2"}, fmt.Errorf("invalid country ISO2: %s", swiftCodeRequest.CountryISO2)
 	}
 
-	if !strings.EqualFold(swiftCodeRequest.CountryName, country.Name) {
+	if !strings.EqualFold(swiftCodeRequest.CountryName, strings.ToUpper(country.Name)) {
 		return map[string]string{"message": "Country name does not match ISO2"}, fmt.Errorf("country name '%s' does not match ISO2 '%s'", swiftCodeRequest.CountryName, swiftCodeRequest.CountryISO2)
 	}
 

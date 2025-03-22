@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"swift-app/internal/models"
+	countries_check "swift-app/internal/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -130,6 +131,23 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 	swiftCodeRequest.SwiftCode = strings.ToUpper(swiftCodeRequest.SwiftCode)
 	swiftCodeRequest.CountryISO2 = strings.ToUpper(swiftCodeRequest.CountryISO2)
 	swiftCodeRequest.CountryName = strings.ToUpper(swiftCodeRequest.CountryName)
+	countries, err := countries_check.LoadCountries()
+	if err != nil {
+		return map[string]string{"message": "Error loading countries data"}, err
+	}
+
+	country, exists := countries[swiftCodeRequest.CountryISO2]
+	if !exists {
+		return map[string]string{"message": "Invalid country ISO2"}, fmt.Errorf("invalid country ISO2: %s", swiftCodeRequest.CountryISO2)
+	}
+
+	if !strings.EqualFold(swiftCodeRequest.CountryName, country.Name) {
+		return map[string]string{"message": "Country name does not match ISO2"}, fmt.Errorf("country name '%s' does not match ISO2 '%s'", swiftCodeRequest.CountryName, swiftCodeRequest.CountryISO2)
+	}
+
+	if len(swiftCodeRequest.CountryISO2) != 2 {
+		return map[string]string{"message": "Country ISO must have 2 characters"}, fmt.Errorf("country ISO must have 2 characters")
+	}
 
 	swiftCode := bson.M{
 		"swiftCode":     swiftCodeRequest.SwiftCode,
@@ -138,6 +156,10 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 		"countryISO2":   swiftCodeRequest.CountryISO2,
 		"countryName":   swiftCodeRequest.CountryName,
 		"isHeadquarter": swiftCodeRequest.IsHeadquarter,
+		"branches":      swiftCodeRequest.Branches,
+	}
+	if swiftCodeRequest.IsHeadquarter && swiftCodeRequest.Branches == nil {
+		swiftCode["branches"] = []bson.M{}
 	}
 
 	if swiftCodeRequest.IsHeadquarter {
@@ -162,7 +184,7 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 	}
 	headquarterSwiftCode := swiftCodeRequest.SwiftCode[:8] + "XXX"
 	var headquarter models.SwiftCode
-	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}).Decode(&headquarter)
+	err = s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}).Decode(&headquarter)
 	if err != nil {
 		return map[string]string{"message": "Headquarter not found for the branch SWIFT code"}, err
 	}

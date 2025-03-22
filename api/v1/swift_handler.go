@@ -29,7 +29,7 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 		SwiftCode:     swift.SwiftCode,
 	}
 
-	if swift.IsHeadquarter && len(swift.Branches) > 0 {
+	if swift.IsHeadquarter {
 		response.Branches = swift.Branches
 	}
 
@@ -45,14 +45,9 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 		return
 	}
 
-	var countryName string
-	if len(swiftCodesResponse.SwiftCodes) > 0 {
-		countryName = swiftCodesResponse.SwiftCodes[0].CountryName
-	}
-
 	response := models.CountrySwiftCodesResponse{
 		CountryISO2: countryISO2,
-		CountryName: countryName,
+		CountryName: swiftCodesResponse.CountryName,
 		SwiftCodes:  swiftCodesResponse.SwiftCodes,
 	}
 

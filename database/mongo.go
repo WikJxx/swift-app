@@ -81,10 +81,7 @@ func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 			"countryISO2":   headquarter.CountryISO2,
 			"countryName":   headquarter.CountryName,
 			"isHeadquarter": headquarter.IsHeadquarter,
-		}
-
-		if len(headquarter.Branches) > 0 {
-			doc["branches"] = headquarter.Branches
+			"branches":      headquarter.Branches,
 		}
 
 		docs = append(docs, doc)

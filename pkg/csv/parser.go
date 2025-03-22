@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"swift-app/internal/models"
+	countries_check "swift-app/internal/utils"
 )
 
 func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
@@ -51,6 +52,10 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	branchQueue := make([]*models.SwiftBranch, 0)
 	uniqueHQ := make(map[string]bool)
 	uniqueBranches := make(map[string]bool)
+	countries, err := countries_check.LoadCountries()
+	if err != nil {
+		return nil, fmt.Errorf("error loading country data: %v", err)
+	}
 
 	for _, record := range records[1:] {
 		if record[fieldIndexes["SWIFT CODE"]] == "" || record[fieldIndexes["COUNTRY ISO2 CODE"]] == "" {
@@ -66,27 +71,39 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 			fmt.Printf("Warning: SWIFT code %s is smaller than 8 characters\n", swiftCode)
 			continue
 		}
-		countryISO2 := "Unknown"
-		if fieldIndexes["COUNTRY ISO2 CODE"] != -1 {
-			countryISO2 = strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])
+		countryISO2 := strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])
+		if len(countryISO2) != 2 {
+			fmt.Printf("Warning: Country ISO %s is smaller than 2 characters\n", swiftCode)
+			continue
+		}
+		bankName := strings.ToUpper(record[fieldIndexes["NAME"]])
+		if fieldIndexes["NAME"] == -1 {
+			fmt.Printf("Warning: Name %s can not be empty \n", swiftCode)
+			continue
 		}
 
-		bankName := "Unknown"
-		if fieldIndexes["NAME"] != -1 {
-			bankName = record[fieldIndexes["NAME"]]
+		address := ""
+		if fieldIndexes["ADDRESS"] != -1 && fieldIndexes["ADDRESS"] < len(record) {
+			address = strings.TrimSpace(strings.ToUpper(record[fieldIndexes["ADDRESS"]]))
 		}
 
-		address := "Unknown Address"
-		if fieldIndexes["ADDRESS"] != -1 {
-			address = record[fieldIndexes["ADDRESS"]]
-		}
-
-		countryName := "Unknown Country"
-		if fieldIndexes["COUNTRY NAME"] != -1 {
-			countryName = record[fieldIndexes["COUNTRY NAME"]]
+		countryName := strings.ToUpper(record[fieldIndexes["COUNTRY NAME"]])
+		if fieldIndexes["COUNTRY NAME"] == -1 {
+			fmt.Printf("Warning: Country name %s can not be empty \n", swiftCode)
 		}
 
 		isHeadquarter := strings.HasSuffix(swiftCode, "XXX")
+
+		country, exists := countries[countryISO2]
+		if !exists {
+			fmt.Printf("Warning: Invalid country ISO2 for SWIFT code %s\n", swiftCode)
+			continue
+		}
+
+		if !strings.EqualFold(countryName, country.Name) {
+			fmt.Printf("Warning: Country name '%s' does not match ISO2 '%s'\n", countryName, countryISO2)
+			continue
+		}
 
 		if isHeadquarter {
 			if _, exists := uniqueHQ[swiftCode]; exists {

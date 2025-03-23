@@ -34,7 +34,7 @@ func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftC
 	err = s.DB.FindOne(context.Background(), filter).Decode(&headquarter)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("headquarter not found for SWIFT code %s. Please add a headquarter before adding branches", headquarterSwiftCode)
+			return nil, fmt.Errorf("missing headquarter: %s", headquarterSwiftCode)
 		}
 		return nil, fmt.Errorf("database error while searching for headquarter: %v", err)
 	}

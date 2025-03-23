@@ -57,7 +57,7 @@ func TestGetSwiftCode_NotFound(t *testing.T) {
 	GetSwiftCode(c, service)
 
 	assert.Equal(t, http.StatusNotFound, w.Code, "Expected status code 404")
-	assert.Contains(t, w.Body.String(), "headquarter not found for SWIFT code NONEXISTXXX", "Expected error message in response")
+	assert.Contains(t, w.Body.String(), "missing headquarter: NONEXISTXXX", "Expected error message in response")
 }
 
 func TestGetSwiftCodesByCountry(t *testing.T) {

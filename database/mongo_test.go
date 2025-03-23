@@ -12,28 +12,22 @@ import (
 )
 
 func clearCollection() {
-	// Wyczyść kolekcję przed każdym testem
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 }
 
 func TestInitMongoDB(t *testing.T) {
-	// Wyczyść kolekcję przed testem
 	clearCollection()
 
-	// Pobierz URI do kontenera MongoDB
 	uri, err := utils.MongoContainer.ConnectionString(context.Background())
 	if err != nil {
 		t.Fatalf("Failed to retrieve MongoDB URI: %v", err)
 	}
 
-	// Inicjalizacja bazy danych
 	err = InitMongoDB(uri, "swiftDB", "swiftCodes")
 	assert.NoError(t, err, "InitMongoDB should not return an error")
 
-	// Sprawdzenie, czy kolekcja została poprawnie zainicjalizowana
 	assert.NotNil(t, collection, "Collection should not be nil")
 
-	// Sprawdzenie, czy indeks został poprawnie utworzony
 	indexes, err := utils.Collection.Indexes().List(context.Background())
 	assert.NoError(t, err, "Failed to list indexes")
 
@@ -52,20 +46,15 @@ func TestInitMongoDB(t *testing.T) {
 }
 
 func TestIsCollectionEmpty(t *testing.T) {
-	// Wyczyść kolekcję przed testem
 	clearCollection()
 
-	// Sprawdzenie, czy kolekcja jest pusta
 	empty, err := IsCollectionEmpty()
 	assert.NoError(t, err, "IsCollectionEmpty should not return an error")
 	assert.True(t, empty, "Collection should be empty")
 }
 
 func TestSaveSwiftCodes(t *testing.T) {
-	// Wyczyść kolekcję przed testem
 	clearCollection()
-
-	// Dane testowe
 	swiftCodes := []models.SwiftCode{
 		{
 			SwiftCode:     "AAAABBBXXX",
@@ -85,11 +74,9 @@ func TestSaveSwiftCodes(t *testing.T) {
 		},
 	}
 
-	// Zapisywanie danych do bazy
 	err := SaveSwiftCodes(swiftCodes)
 	assert.NoError(t, err, "SaveSwiftCodes should not return an error")
 
-	// Sprawdzenie, czy dane zostały zapisane
 	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{})
 	assert.NoError(t, err, "Failed to count documents")
 	assert.Equal(t, int64(2), count, "Expected 2 documents in the collection")

@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"swift-app/cmd/server"
 	"swift-app/database"
-	initialization "swift-app/pkg"
+	initialization "swift-app/initialization"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -33,7 +33,7 @@ func handleShutdown() {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("⚠️ No .env file found, using default values.")
+		log.Println("No .env file found, using default values.")
 	}
 
 	mongoURI := os.Getenv("MONGO_URI")

@@ -12,36 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// func setupTestMongo(t *testing.T) (*services.SwiftCodeService, func()) {
-// 	t.Helper()
-
-// 	ctx := context.Background()
-// 	mongoContainer, err := mongodb.Run(ctx, "mongo:latest")
-// 	if err != nil {
-// 		t.Fatalf("Failed to start MongoDB container: %v", err)
-// 	}
-
-// 	uri, err := mongoContainer.ConnectionString(ctx)
-// 	if err != nil {
-// 		t.Fatalf("Failed to retrieve MongoDB URI: %v", err)
-// 	}
-
-// 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-// 	if err != nil {
-// 		t.Fatalf("Failed to connect to MongoDB: %v", err)
-// 	}
-
-// 	collection := mongoClient.Database("swiftDB").Collection("swiftCodes")
-// 	service := services.NewSwiftCodeService(collection)
-
-// 	cleanup := func() {
-// 		mongoClient.Disconnect(ctx)
-// 		mongoContainer.Terminate(ctx)
-// 	}
-
-// 	return service, cleanup
-// }
-
 func TestAddSwiftCode(t *testing.T) {
 	service := services.NewSwiftCodeService(testutils.Collection)
 

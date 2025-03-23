@@ -116,32 +116,6 @@ PL;TPEOPLPWKOP;BIC11;PEKAO;"FOREST ZUBRA 1";WARSZAWA;POLAND;Europe/Warsaw`
 	}
 }
 
-// func TestLoadSwiftCodesLargeFile(t *testing.T) {
-// 	const largeRecord = "COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE\nPL,TPEOPLPGXXX,BIC11,PEKAO,\"FOREST ZUBRA 1, FLOOR 1 WARSZAWA, MAZOWIECKIE, 01-066\",WARSZAWA,POLAND,Europe/Warsaw\n"
-// 	tmpFile, err := os.CreateTemp("", "large_swiftcodes.csv")
-
-// 	if err != nil {
-// 		t.Fatalf("failed to create temporary file: %v", err)
-// 	}
-// 	defer os.Remove(tmpFile.Name())
-
-// 	for i := 0; i < 10000; i++ { // 10k rekordów
-// 		if _, err := tmpFile.WriteString(largeRecord); err != nil {
-// 			t.Fatalf("failed to write to temporary file: %v", err)
-// 		}
-// 	}
-// 	tmpFile.Close()
-
-// 	swiftCodes, err := LoadSwiftCodes(tmpFile.Name())
-// 	if err != nil {
-// 		t.Fatalf("error loading large swift code file: %v", err)
-// 	}
-
-// 	if len(swiftCodes) == 0 {
-// 		t.Fatalf("expected swift codes, got 0")
-// 	}
-// }
-
 func TestLoadSwiftCodesEmptyAddress(t *testing.T) {
 	const testCSV = `COUNTRY ISO2 CODE,SWIFT CODE,TYPE,NAME,ADDRESS,TOWN NAME,COUNTRY NAME,TIMEZONE
 PL,TPEOPLPGXXX,BIC11,PEKAO,,WARSZAWA,POLAND,Europe/Warsaw`

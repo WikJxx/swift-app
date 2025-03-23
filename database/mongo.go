@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"swift-app/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -44,8 +45,15 @@ func InitMongoDB(uri string, dbName string, collectionName string) error {
 	isConnected = true
 	return nil
 }
-
+func IsCollectionEmpty() (bool, error) {
+	count, err := collection.CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		return false, fmt.Errorf("failed to count documents: %v", err)
+	}
+	return count == 0, nil
+}
 func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
+
 	var docs []interface{}
 	headquarters := make(map[string]*models.SwiftCode)
 
@@ -104,6 +112,21 @@ func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 		}
 	}
 
+	fmt.Println("Data imported successfully.")
+	return nil
+}
+
+func CloseMongoDB() error {
+	if client == nil {
+		return fmt.Errorf("MongoDB client is not initialized")
+	}
+
+	err := client.Disconnect(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to close MongoDB connection: %v", err)
+	}
+
+	log.Println("MongoDB connection closed successfully")
 	return nil
 }
 

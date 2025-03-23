@@ -16,12 +16,6 @@ func StartServer() {
 
 	swiftService := services.NewSwiftCodeService(database.GetCollection())
 
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{
-			"error": "Endpoint not found. Please check the URL and try again.",
-		})
-	})
-
 	router.SetupRoutes(r, swiftService)
 
 	port := "8080"

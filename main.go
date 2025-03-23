@@ -3,27 +3,55 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"swift-app/cmd/server"
 	"swift-app/database"
+	initialization "swift-app/pkg"
+	"syscall"
+
+	"github.com/joho/godotenv"
 )
 
+func handleShutdown() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		fmt.Println("\nShutdown requested, closing database connection...")
+		err := database.CloseMongoDB()
+		if err != nil {
+			log.Println("Error closing database:", err)
+		} else {
+			fmt.Println("Database connection closed.")
+		}
+		os.Exit(0)
+	}()
+}
+
 func main() {
-	err := database.InitMongoDB("mongodb://localhost:27017", "swiftDB", "swiftCodes")
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %v", err)
+		log.Println("⚠️ No .env file found, using default values.")
 	}
 
-	// swiftCodes, err := parser.LoadSwiftCodes("./pkg/test_data/Interns_2025_SWIFT_CODES.csv")
-	// if err != nil {
-	// 	log.Fatalf("Error loading swift codes: %v", err)
-	// }
+	mongoURI := os.Getenv("MONGO_URI")
+	mongoDB := os.Getenv("MONGO_DB")
+	mongoCollection := os.Getenv("MONGO_COLLECTION")
+	csvPath := os.Getenv("CSV_PATH")
 
-	// err = database.SaveSwiftCodes(swiftCodes)
-	// if err != nil {
-	// 	log.Fatalf("Failed to save swift codes to database: %v", err)
-	// }
+	err = initialization.InitializeDatabase(mongoURI, mongoDB, mongoCollection)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
-	fmt.Println("Successfully saved SWIFT codes to MongoDB")
+	err = initialization.ImportDataIfNeeded(csvPath)
+	if err != nil {
+		log.Fatalf("Failed to import data: %v", err)
+	}
 
+	handleShutdown()
+	fmt.Println("Starting application...")
 	server.StartServer()
 }

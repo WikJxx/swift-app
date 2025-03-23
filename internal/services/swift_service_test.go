@@ -6,47 +6,44 @@ import (
 
 	"swift-app/internal/models"
 	"swift-app/internal/services"
+	testutils "swift-app/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func setupTestMongo(t *testing.T) (*services.SwiftCodeService, func()) {
-	t.Helper()
+// func setupTestMongo(t *testing.T) (*services.SwiftCodeService, func()) {
+// 	t.Helper()
 
-	ctx := context.Background()
-	mongoContainer, err := mongodb.Run(ctx, "mongo:latest")
-	if err != nil {
-		t.Fatalf("Failed to start MongoDB container: %v", err)
-	}
+// 	ctx := context.Background()
+// 	mongoContainer, err := mongodb.Run(ctx, "mongo:latest")
+// 	if err != nil {
+// 		t.Fatalf("Failed to start MongoDB container: %v", err)
+// 	}
 
-	uri, err := mongoContainer.ConnectionString(ctx)
-	if err != nil {
-		t.Fatalf("Failed to retrieve MongoDB URI: %v", err)
-	}
+// 	uri, err := mongoContainer.ConnectionString(ctx)
+// 	if err != nil {
+// 		t.Fatalf("Failed to retrieve MongoDB URI: %v", err)
+// 	}
 
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err != nil {
-		t.Fatalf("Failed to connect to MongoDB: %v", err)
-	}
+// 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+// 	if err != nil {
+// 		t.Fatalf("Failed to connect to MongoDB: %v", err)
+// 	}
 
-	collection := mongoClient.Database("swiftDB").Collection("swiftCodes")
-	service := services.NewSwiftCodeService(collection)
+// 	collection := mongoClient.Database("swiftDB").Collection("swiftCodes")
+// 	service := services.NewSwiftCodeService(collection)
 
-	cleanup := func() {
-		mongoClient.Disconnect(ctx)
-		mongoContainer.Terminate(ctx)
-	}
+// 	cleanup := func() {
+// 		mongoClient.Disconnect(ctx)
+// 		mongoContainer.Terminate(ctx)
+// 	}
 
-	return service, cleanup
-}
+// 	return service, cleanup
+// }
 
 func TestAddSwiftCode(t *testing.T) {
-	service, cleanup := setupTestMongo(t)
-	defer cleanup()
+	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := &models.SwiftCode{
 		SwiftCode:     "AAAABBBXXX",
@@ -60,14 +57,14 @@ func TestAddSwiftCode(t *testing.T) {
 	msg, err := service.AddSwiftCode(swiftCode)
 	assert.NoError(t, err, "Adding a SWIFT code should not return an error")
 	assert.Equal(t, "Headquarter SWIFT code added successfully", msg["message"])
+
 	var result models.SwiftCode
 	err = service.DB.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBBXXX"}).Decode(&result)
 	assert.NoError(t, err, "SWIFT code should exist in the database")
 }
 
 func TestGetSwiftCodeDetails(t *testing.T) {
-	service, cleanup := setupTestMongo(t)
-	defer cleanup()
+	service := services.NewSwiftCodeService(testutils.Collection)
 	swiftCode := bson.M{
 		"swiftCode":     "AAAABBBXXX",
 		"bankName":      "Test Bank",
@@ -85,8 +82,7 @@ func TestGetSwiftCodeDetails(t *testing.T) {
 }
 
 func TestGetSwiftCodesByCountry(t *testing.T) {
-	service, cleanup := setupTestMongo(t)
-	defer cleanup()
+	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCodes := []interface{}{
 		bson.M{
@@ -114,8 +110,7 @@ func TestGetSwiftCodesByCountry(t *testing.T) {
 }
 
 func TestDeleteSwiftCode(t *testing.T) {
-	service, cleanup := setupTestMongo(t)
-	defer cleanup()
+	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := bson.M{
 		"swiftCode":     "XYZBANKXXX",

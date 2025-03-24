@@ -148,10 +148,6 @@ func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map
 		return map[string]string{"message": "Country name does not match ISO2"}, fmt.Errorf("country name '%s' does not match ISO2 '%s'", swiftCodeRequest.CountryName, swiftCodeRequest.CountryISO2)
 	}
 
-	if len(swiftCodeRequest.CountryISO2) != 2 {
-		return map[string]string{"message": "Country ISO must have 2 characters"}, fmt.Errorf("country ISO must have 2 characters")
-	}
-
 	swiftCode := bson.M{
 		"swiftCode":     swiftCodeRequest.SwiftCode,
 		"bankName":      swiftCodeRequest.BankName,

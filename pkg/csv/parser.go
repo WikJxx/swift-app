@@ -58,11 +58,16 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	}
 
 	for _, record := range records[1:] {
+		swiftCode := strings.ToUpper(record[fieldIndexes["SWIFT CODE"]])
+		countryISO2 := strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])
+		if len(countryISO2) != 2 {
+			fmt.Printf("Warning: Country ISO %s is smaller than 2 characters\n", swiftCode)
+			continue
+		}
 		if record[fieldIndexes["SWIFT CODE"]] == "" || record[fieldIndexes["COUNTRY ISO2 CODE"]] == "" {
 			continue
 		}
 
-		swiftCode := strings.ToUpper(record[fieldIndexes["SWIFT CODE"]])
 		if len(swiftCode) > 11 {
 			fmt.Printf("Warning: SWIFT code %s is longer than 11 characters\n", swiftCode)
 			continue
@@ -71,11 +76,7 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 			fmt.Printf("Warning: SWIFT code %s is smaller than 8 characters\n", swiftCode)
 			continue
 		}
-		countryISO2 := strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]])
-		if len(countryISO2) != 2 {
-			fmt.Printf("Warning: Country ISO %s is smaller than 2 characters\n", swiftCode)
-			continue
-		}
+
 		bankName := strings.ToUpper(record[fieldIndexes["NAME"]])
 		if fieldIndexes["NAME"] == -1 {
 			fmt.Printf("Warning: Name %s can not be empty \n", swiftCode)

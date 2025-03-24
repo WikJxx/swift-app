@@ -125,6 +125,9 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 }
 
 func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map[string]string, error) {
+	if len(swiftCodeRequest.CountryISO2) != 2 {
+		return map[string]string{"message": "Country ISO2 code must have 2 characters"}, fmt.Errorf("country ISO2 code must have 2 characters")
+	}
 	if len(swiftCodeRequest.SwiftCode) < 8 || len(swiftCodeRequest.SwiftCode) > 11 {
 		return map[string]string{"message": "SWIFT code cannot be longer than 11 characters and smaller than 8"}, fmt.Errorf("SWIFT code cannot be longer than 11 characters and smaller than 8")
 	}

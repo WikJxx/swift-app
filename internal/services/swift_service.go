@@ -21,6 +21,9 @@ func NewSwiftCodeService(db *mongo.Collection) *SwiftCodeService {
 }
 
 func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftCode, error) {
+	if len(swiftCode) < 8 || len(swiftCode) > 11 {
+		return nil, fmt.Errorf("invalid SWIFT code length: must be between 8 and 11 characters")
+	}
 	var swiftCodeDetails models.SwiftCode
 
 	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode}).Decode(&swiftCodeDetails)
@@ -58,6 +61,23 @@ func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftC
 
 func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.CountrySwiftCodesResponse, error) {
 	countryISO2 = strings.ToUpper(countryISO2)
+	if len(countryISO2) != 2 {
+		return nil, fmt.Errorf("invalid country ISO2 code: must be exactly 2 characters")
+	}
+
+	for _, r := range countryISO2 {
+		if r < 'A' || r > 'Z' {
+			return nil, fmt.Errorf("invalid country ISO2 code: must contain only letters")
+		}
+	}
+
+	countries, err := countries_check.LoadCountries()
+	if err != nil {
+		return nil, fmt.Errorf("error loading countries list: %v", err)
+	}
+	if _, ok := countries[countryISO2]; !ok {
+		return nil, fmt.Errorf("country ISO2 code '%s' not found in countries list", countryISO2)
+	}
 
 	cursor, err := s.DB.Find(context.Background(), bson.M{"countryISO2": countryISO2})
 	if err != nil {
@@ -125,12 +145,14 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 }
 
 func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map[string]string, error) {
-	if len(swiftCodeRequest.CountryISO2) != 2 {
-		return map[string]string{"message": "Country ISO2 code must have 2 characters"}, fmt.Errorf("country ISO2 code must have 2 characters")
-	}
 	if len(swiftCodeRequest.SwiftCode) < 8 || len(swiftCodeRequest.SwiftCode) > 11 {
 		return map[string]string{"message": "SWIFT code cannot be longer than 11 characters and smaller than 8"}, fmt.Errorf("SWIFT code cannot be longer than 11 characters and smaller than 8")
 	}
+
+	if len(swiftCodeRequest.CountryISO2) != 2 {
+		return map[string]string{"message": "Country ISO2 code must have 2 characters"}, fmt.Errorf("country ISO2 code must have 2 characters")
+	}
+
 	swiftCodeRequest.SwiftCode = strings.ToUpper(swiftCodeRequest.SwiftCode)
 	swiftCodeRequest.CountryISO2 = strings.ToUpper(swiftCodeRequest.CountryISO2)
 	swiftCodeRequest.CountryName = strings.ToUpper(swiftCodeRequest.CountryName)

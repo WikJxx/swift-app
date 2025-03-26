@@ -13,7 +13,7 @@ import (
 func LoadCountries() (map[string]models.Country, error) {
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	projectRootDir := filepath.Join(filepath.Dir(currentFilePath), "../..")
-	filePath := filepath.Join(projectRootDir, "internal", "data", "countries.csv")
+	filePath := filepath.Join(projectRootDir, "internal", "resources", "countries.csv")
 
 	file, err := os.Open(filePath)
 	if err != nil {

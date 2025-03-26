@@ -2,11 +2,11 @@ FROM golang:1.24.1-alpine
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY app/go.mod app/go.sum ./
 
 RUN go mod tidy
 
-COPY . .
+COPY app/ .
 
 RUN go build -o swift-app .
 

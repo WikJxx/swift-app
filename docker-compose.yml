@@ -1,17 +1,21 @@
+version: "3.9"
+
 services:
   app:
-    build: .
+    build:
+      context: .
     container_name: swift-app
+    working_dir: /app
     ports:
       - "8080:8080"
-    environment:
-      - MONGO_URI=mongodb://mongo:27017
+    env_file:
+      - app/.env           
     depends_on:
       - mongo
     restart: always
     command: >
       sh -c "until nc -z -v -w30 mongo 27017; do echo 'Waiting for MongoDB...'; sleep 5; done; ./swift-app"
-  
+
   mongo:
     image: mongo:latest
     container_name: mongo

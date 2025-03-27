@@ -129,7 +129,7 @@ If you run it locally make sure you have correct variables in .env file:
 MONGO_URI=mongodb://mongo:27017
 MONGO_DB=swiftDB
 MONGO_COLLECTION=swiftCodes
-CSV_PATH=./pkg/test_data/Interns_2025_SWIFT_CODES.csv
+CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
 
 ```
 

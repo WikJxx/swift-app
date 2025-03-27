@@ -17,6 +17,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Unit tests for individual handlers of SWIFT code API endpoints.
+// Tests validate handler behavior, response correctness, and proper error handling.
+
 func clearCollection() {
 	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 }
@@ -37,7 +40,7 @@ func TestGetSwiftCode(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "swift-code", Value: "aaaabbbxxx"}} // lowercase, test ToUpper
+	c.Params = []gin.Param{{Key: "swift-code", Value: "aaaabbbxxx"}}
 
 	GetSwiftCode(c, service)
 
@@ -90,7 +93,7 @@ func TestGetSwiftCodesByCountry(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "countryISO2code", Value: "us"}} // test lowercase input
+	c.Params = []gin.Param{{Key: "countryISO2code", Value: "us"}}
 
 	GetSwiftCodesByCountry(c, service)
 

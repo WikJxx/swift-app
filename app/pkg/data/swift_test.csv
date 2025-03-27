@@ -1,0 +1,3 @@
+swiftCode,bankName,countryISO2,countryName,address,isHeadquarter
+AAAABBBXXX,Test Bank,US,United States,123 Test St,true
+AAAABBBABC,Test Branch,US,United States,456 Branch Ave,false

@@ -17,6 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Package integration contains integration tests verifying the complete HTTP request-response cycle for SWIFT code API endpoints.
+
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 

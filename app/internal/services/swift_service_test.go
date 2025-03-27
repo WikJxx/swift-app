@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Package services_test contains integration tests for SwiftCodeService methods.
 func TestAddSwiftCode(t *testing.T) {
 	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 

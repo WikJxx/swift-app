@@ -13,6 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Package database contains integration tests for MongoDB-related functions:
+// verifying database initialization, collection state checks, and saving HQ and branch SWIFT codes.
+
 func clearCollection() {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 }

@@ -25,6 +25,9 @@ func setupRouter() *gin.Engine {
 	return r
 }
 
+// Package router contains integration tests for API endpoints related to SWIFT codes.
+// Tests verify correct HTTP responses, database interactions, and error handling.
+
 func TestGetSwiftCode(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 

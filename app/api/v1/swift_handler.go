@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Retrieves details of a specific SWIFT code, including branches if available.
 func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	swiftCode := strings.ToUpper(c.Param("swift-code"))
 
@@ -36,6 +37,7 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Retrieves all SWIFT codes for a given country identified by ISO2 code.
 func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeService) {
 	countryISO2 := strings.ToUpper(c.Param("countryISO2code"))
 
@@ -55,6 +57,7 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 	c.JSON(http.StatusOK, response)
 }
 
+// Adds a new SWIFT code to the system using provided data.
 func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	var swiftCodeRequest models.SwiftCode
 	if err := c.ShouldBindJSON(&swiftCodeRequest); err != nil {
@@ -72,6 +75,7 @@ func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	c.JSON(http.StatusOK, models.MessageResponse{Message: message})
 }
 
+// Deletes an existing SWIFT code from the system.
 func DeleteSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	swiftCode := strings.ToUpper(c.Param("swift-code"))
 

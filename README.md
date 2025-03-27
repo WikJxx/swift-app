@@ -2,6 +2,21 @@
 This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Codes) data. It allows users to parse, store, and query SWIFT codes efficiently, providing endpoints for retrieving, adding, and deleting SWIFT codes. The application is containerized using Docker and uses MongoDB as the database for fast and scalable data storage.
 
 ---
+## Chosen Technologies
+#### Go (Golang) – selected for its simplicity, concurrency support, and high performance, making it an excellent fit for building efficient and scalable backend APIs.
+
+#### MongoDB – a flexible NoSQL database well-suited for hierarchical and document-based data structures, such as SWIFT codes and their associated branches.
+
+#### Gin – a lightweight and fast web framework for Go that simplifies building RESTful APIs with clean routing and middleware support.
+
+#### Testcontainers-Go – used for integration testing with real MongoDB containers, ensuring isolated, repeatable, and reliable test environments.
+
+#### Docker – ensures consistent development and production environments through containerization, making deployment and testing easier.
+
+#### CSV as data source – a simple and widely used format for structured data, making it ideal for loading and testing SWIFT code data.
+
+
+---
 
 ## Table of Contents
 
@@ -97,13 +112,13 @@ swift-api/
 
 - MongoDB (or Docker for containerized deployment)
 
-- Docker (optional, for containerized deployment)
+- Docker (for containerized deployment and tests)
 
 ### Installation
 #### 1. Clone the repository:
 ```bash 
-git clone https://github.com/your-username/swift-api.git
-cd swift-api
+https://github.com/WikJxx/swift-app.git
+cd swift-api/app
 ```
 #### 2. Install dependencies:
 ```bash
@@ -121,7 +136,7 @@ CSV_PATH=./pkg/test_data/Interns_2025_SWIFT_CODES.csv
 ```
 
 #### 1. Start MongoDB:
-- If using Docker:
+- If using Docker (recomended):
     ```bash
     docker-compose up -d mongo
     ```
@@ -224,7 +239,7 @@ The APP will be available at http://localhost:8080.
 ---
 
 ## Testing
-To run the tests, use the following command:
+To run the tests,make sure you have docker running and use the following command:
 ```bash
 go test ./...
 ```

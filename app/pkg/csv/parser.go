@@ -9,6 +9,7 @@ import (
 	"swift-app/internal/utils"
 )
 
+// Loads and parses a CSV file containing SWIFT code data, validates each record, and returns a list of unique, validated SWIFT codes.
 func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -38,12 +39,15 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	return processRecords(records[1:], fieldIndexes, countries)
 }
 
+// Converts all header fields to uppercase and trims whitespace to ensure consistent field matching.
 func sanitizeHeader(header []string) []string {
 	for i, h := range header {
-		header[i] = strings.TrimSpace(h)
+		header[i] = strings.ToUpper(strings.TrimSpace(h))
 	}
 	return header
 }
+
+//Maps column names (including supported aliases) to their respective indexes in the CSV header row.
 
 func getFieldIndexes(header []string) map[string]int {
 	fieldIndexes := map[string]int{
@@ -53,15 +57,30 @@ func getFieldIndexes(header []string) map[string]int {
 		"ADDRESS":           -1,
 		"COUNTRY NAME":      -1,
 	}
+
+	aliases := map[string]string{
+		"SWIFTCODE":   "SWIFT CODE",
+		"SWIFT CODES": "SWIFT CODE",
+		"SWIFT_CODE":  "SWIFT CODE",
+		"SWIFT C0DE":  "SWIFT CODE",
+	}
+
 	for i, field := range header {
-		upperField := strings.ToUpper(field)
+		upperField := strings.ToUpper(strings.TrimSpace(field))
+
+		if alias, ok := aliases[upperField]; ok {
+			upperField = alias
+		}
+
 		if _, exists := fieldIndexes[upperField]; exists {
 			fieldIndexes[upperField] = i
 		}
 	}
+
 	return fieldIndexes
 }
 
+// Processes all rows from the CSV file, validates them, and constructs SwiftCode structs while skipping duplicates or invalid entries.
 func processRecords(records [][]string, fieldIndexes map[string]int, countries map[string]models.Country) ([]models.SwiftCode, error) {
 	swiftCodes := []models.SwiftCode{}
 	uniqueCodes := make(map[string]bool)
@@ -110,6 +129,7 @@ func processRecords(records [][]string, fieldIndexes map[string]int, countries m
 	return swiftCodes, nil
 }
 
+// Extracts and normalizes (uppercase/trim) the values for SWIFT code, ISO2, bank name, address, and country name from a CSV row.
 func extractRecordData(record []string, fieldIndexes map[string]int) (string, string, string, string, string) {
 	swiftCode := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["SWIFT CODE"]]))
 	countryISO2 := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]]))
@@ -120,6 +140,7 @@ func extractRecordData(record []string, fieldIndexes map[string]int) (string, st
 	return swiftCode, countryISO2, bankName, address, countryName
 }
 
+// Validates the extracted data from a record against SWIFT code rules and the provided country map.
 func validateRecord(swiftCode, countryISO2, bankName, address, countryName string, countries map[string]models.Country) error {
 	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
 		return fmt.Errorf("invalid SWIFT code: %v", err)

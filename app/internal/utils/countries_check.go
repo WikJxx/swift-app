@@ -10,10 +10,16 @@ import (
 	"swift-app/internal/models"
 )
 
-func LoadCountries() (map[string]models.Country, error) {
+// getCountriesCSVPath returns the path to countries.csv file
+var getCountriesCSVPath = func() string {
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	projectRootDir := filepath.Join(filepath.Dir(currentFilePath), "../..")
-	filePath := filepath.Join(projectRootDir, "internal", "resources", "countries.csv")
+	return filepath.Join(projectRootDir, "internal", "resources", "countries.csv")
+}
+
+// LoadCountries loads and parses country data from a CSV file, returning a map of country ISO2 codes to country details.
+func LoadCountries() (map[string]models.Country, error) {
+	filePath := getCountriesCSVPath()
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -28,17 +34,12 @@ func LoadCountries() (map[string]models.Country, error) {
 	}
 
 	countries := make(map[string]models.Country)
-
 	header := records[0]
 	for i, h := range header {
 		header[i] = strings.TrimSpace(h)
 	}
 
-	fieldIndexes := map[string]int{
-		"ISO2": -1,
-		"NAME": -1,
-	}
-
+	fieldIndexes := map[string]int{"ISO2": -1, "NAME": -1}
 	for i, field := range header {
 		upperField := strings.ToUpper(field)
 		if _, exists := fieldIndexes[upperField]; exists {

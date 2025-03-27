@@ -7,6 +7,7 @@ import (
 	parser "swift-app/pkg/csv"
 )
 
+// Function sets up the MongoDB connection and initializes the required database collection.
 func InitializeDatabase(uri, dbName, collectionName string) error {
 	err := database.InitMongoDB(uri, dbName, collectionName)
 	if err != nil {
@@ -15,6 +16,7 @@ func InitializeDatabase(uri, dbName, collectionName string) error {
 	return nil
 }
 
+// Function loads SWIFT codes from a CSV file and imports them into the database, managing headquarters and branches separately.
 func ImportData(csvPath string) (int, int, int, int, int, int, error) {
 	swiftCodes, err := parser.LoadSwiftCodes(csvPath)
 	if err != nil {

@@ -16,6 +16,7 @@ var client *mongo.Client
 var collection *mongo.Collection
 var isConnected bool
 
+// Function initializes the MongoDB connection and creates a unique index on swiftCode.
 func InitMongoDB(uri string, dbName string, collectionName string) error {
 	if isConnected {
 		return nil
@@ -151,6 +152,7 @@ func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
 	return nil
 }
 
+// function formats branch codes into a single string (helper function).
 func joinBranchCodes(codes []string) string {
 	return fmt.Sprintf("%s", codes)
 }

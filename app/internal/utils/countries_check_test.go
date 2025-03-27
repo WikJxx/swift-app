@@ -1,0 +1,30 @@
+package utils
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestLoadCountries(t *testing.T) {
+	countries, err := LoadCountries()
+	assert.NoError(t, err, "LoadCountries should not return an error")
+	assert.NotEmpty(t, countries, "Countries map should not be empty")
+
+	// Zakładam, że zawsze masz kraj PL w swoim CSV
+	poland, exists := countries["PL"]
+	assert.True(t, exists, "Poland (PL) should exist in countries")
+	assert.Equal(t, "POLAND", poland.Name, "Country name should be POLAND")
+}
+
+func TestLoadCountries_MissingFile(t *testing.T) {
+	// Symuluj brak pliku przez chwilową zmianę ścieżki (tylko na potrzeby testu)
+	originalPath := getCountriesCSVPath
+	getCountriesCSVPath = func() string {
+		return "nonexistent.csv"
+	}
+	defer func() { getCountriesCSVPath = originalPath }()
+
+	_, err := LoadCountries()
+	assert.Error(t, err, "Should return error when CSV file does not exist")
+}

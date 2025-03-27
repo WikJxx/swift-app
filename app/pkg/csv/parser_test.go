@@ -2,9 +2,14 @@ package csv
 
 import (
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+// This file contains unit tests for the LoadSwiftCodes function,
 func TestLoadSwiftCodes(t *testing.T) {
 	data := `SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME
 AAAABBBXXX,US,First Bank,123 First St,United States
@@ -186,7 +191,7 @@ PL,TPEOPLPWKOP,,PEKAO TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH SPOLKA AKCYJNA,"FOREST
 }
 
 func TestLoadSwiftCodesFromFile(t *testing.T) {
-	filePath := "../test_data/Interns_2025_SWIFT_CODES.csv"
+	filePath := "../data/Interns_2025_SWIFT_CODES.csv"
 	swiftCodes, err := LoadSwiftCodes(filePath)
 	if err != nil {
 		t.Fatalf("error reading from file: %v", err)
@@ -194,5 +199,46 @@ func TestLoadSwiftCodesFromFile(t *testing.T) {
 
 	if len(swiftCodes) < 1 {
 		t.Fatalf("expected at least 1 SwiftCode, got %d", len(swiftCodes))
+	}
+}
+
+func TestLoadSwiftCodes_HeaderAliases(t *testing.T) {
+	// Przygotuj tymczasowy plik countries.csv wymagany przez LoadCountries
+	_, currentFilePath, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(currentFilePath), "../..")
+	resourceDir := filepath.Join(projectRoot, "internal", "resources")
+	_ = os.MkdirAll(resourceDir, os.ModePerm)
+
+	countriesCSVPath := filepath.Join(resourceDir, "countries_test.csv")
+	err := os.WriteFile(countriesCSVPath, []byte("ISO2,NAME\nUS,UNITED STATES"), 0644)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		_ = os.Remove(countriesCSVPath)
+	})
+
+	testCases := map[string]string{
+		"SWIFT CODE":  "SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFTCODE":   "SWIFTCODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT_CODE":  "SWIFT_CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT CODES": "SWIFT CODES,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT C0DE":  "SWIFT C0DE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+	}
+
+	for label, content := range testCases {
+		t.Run("Alias: "+label, func(t *testing.T) {
+			tmpFile, err := os.CreateTemp("", "alias_test_*.csv")
+			assert.NoError(t, err)
+			defer os.Remove(tmpFile.Name())
+
+			_, err = tmpFile.WriteString(content)
+			assert.NoError(t, err)
+			tmpFile.Close()
+
+			codes, err := LoadSwiftCodes(tmpFile.Name())
+			assert.NoError(t, err)
+			assert.Equal(t, 1, len(codes))
+			assert.Equal(t, "AAAABBBXXX", codes[0].SwiftCode)
+		})
 	}
 }

@@ -20,6 +20,7 @@ func NewSwiftCodeService(db *mongo.Collection) *SwiftCodeService {
 	return &SwiftCodeService{DB: db}
 }
 
+// Function retrieves details of a specific SWIFT code, including headquarter or branch information.
 func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftCode, error) {
 	swiftCode = strings.ToUpper(swiftCode)
 	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
@@ -53,6 +54,7 @@ func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftC
 	return nil, fmt.Errorf("%w: no branch found for SWIFT code %s", errors.ErrNotFound, swiftCode)
 }
 
+// Function retrieves all SWIFT codes and branches associated with a specified country ISO2 code.
 func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.CountrySwiftCodesResponse, error) {
 	countryISO2 = strings.ToUpper(countryISO2)
 	_, err := utils.LoadAndValidateCountry(countryISO2)
@@ -114,6 +116,7 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 	}, nil
 }
 
+// Function adds a new SWIFT code (headquarter or branch) to the database with proper validation.
 func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, error) {
 	request.SwiftCode = strings.ToUpper(request.SwiftCode)
 	request.CountryISO2 = strings.ToUpper(request.CountryISO2)
@@ -182,6 +185,7 @@ func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, erro
 	return "Branch SWIFT code added to headquarter successfully", nil
 }
 
+// Function deletes an existing SWIFT code (headquarter and its branches, or single branch) from the database.
 func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 	swiftCode = strings.ToUpper(swiftCode)
 	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
@@ -221,7 +225,7 @@ func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 	var headquarter models.SwiftCode
 	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterCode, "isHeadquarter": true}).Decode(&headquarter)
 	if err == mongo.ErrNoDocuments {
-		return "", fmt.Errorf("%w: cannot delete branch %s because headquarter %s does not exist", errors.ErrNotFound, swiftCode, headquarterCode)
+		return "", fmt.Errorf("%w: branch %s not found and its headquarter %s does not exist", errors.ErrNotFound, swiftCode, headquarterCode)
 	}
 	if err != nil {
 		return "", fmt.Errorf("%w: error checking headquarter for branch %s", errors.ErrInternal, swiftCode)

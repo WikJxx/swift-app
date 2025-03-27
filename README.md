@@ -3,17 +3,15 @@ This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Co
 
 ---
 ## Chosen Technologies
-#### Go (Golang) – selected for its simplicity, concurrency support, and high performance, making it an excellent fit for building efficient and scalable backend APIs.
+#### Go (Golang) – Go was used to implement the backend API due to its simplicity and high performance. It enabled building a clean and well-structured project, where the logic is separated into packages for services, handlers, parsers, and validation. Thanks to Go’s strong typing and error handling, it was easier to catch issues early and ensure safe processing of financial data such as SWIFT codes.
 
-#### MongoDB – a flexible NoSQL database well-suited for hierarchical and document-based data structures, such as SWIFT codes and their associated branches.
+#### MongoDB – The document-oriented nature of MongoDB was ideal for storing SWIFT codes, especially due to the nested relationship between headquarters and their branches. The flexible schema allowed each headquarter to include its branches directly, making queries more efficient and avoiding the complexity of joins required in relational databases. It also simplified the insertion and validation logic during data import from CSV files.
 
-#### Gin – a lightweight and fast web framework for Go that simplifies building RESTful APIs with clean routing and middleware support.
+#### Gin – Gin was selected for its performance and ease of use in building RESTful APIs. It provided built-in routing, parameter binding, and middleware support, which helped quickly set up a well-structured HTTP interface for interacting with SWIFT codes (for example: adding, retrieving, deleting, filtering by country).
 
-#### Testcontainers-Go – used for integration testing with real MongoDB containers, ensuring isolated, repeatable, and reliable test environments.
+#### Testcontainers-Go – This library allowed writing integration tests with real MongoDB containers started dynamically during testing. It ensured that database-related logic (such as inserting HQ and branch codes, or validating collection state) was properly verified without relying on a shared environment or external DB. This improved test reliability and confidence in the application’s behavior across different setups.
 
-#### Docker – ensures consistent development and production environments through containerization, making deployment and testing easier.
-
-#### CSV as data source – a simple and widely used format for structured data, making it ideal for loading and testing SWIFT code data.
+#### Docker – Docker was used to containerize the entire application stack, including the Go backend and MongoDB. This ensured the app could be run and tested consistently across machines and environments. It also simplified deployment and eliminated external dependencies during local development.
 
 
 ---
@@ -254,7 +252,7 @@ The project includes:
 ## Docker Deployment
 ### 1. Build and start the containers:
 ```bash
-docker-compose up 
+docker compose up 
 ```
 ### 2. The API will be available at http://localhost:8080. 
 
@@ -265,5 +263,5 @@ docker-compose up
 | `MONGO_URI`         | MongoDB connection URI               | `mongodb://mongo:27017`           |
 | `MONGO_DB`          | MongoDB database name                | `swiftDB`                             |
 | `MONGO_COLLECTION`  | MongoDB collection name              | `swiftCodes`                          |
-| `CSV_PATH`          | Path to the CSV file with SWIFT data | `./pkg/test_data/Interns_2025_SWIFT_CODES.csv` |
+| `CSV_PATH`          | Path to the CSV file with SWIFT data | `./pkg/data/Interns_2025_SWIFT_CODES.csv` |
 

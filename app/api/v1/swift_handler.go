@@ -1,9 +1,9 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
+	"swift-app/internal/errors"
 	"swift-app/internal/models"
 	"swift-app/internal/services"
 
@@ -11,12 +11,12 @@ import (
 )
 
 func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
-	swiftCode := c.Param("swift-code")
-	swiftCode = strings.ToUpper(swiftCode)
+	swiftCode := strings.ToUpper(c.Param("swift-code"))
 
 	swift, err := swiftService.GetSwiftCodeDetails(swiftCode)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		status := errors.MapToStatusCode(err)
+		c.JSON(status, models.MessageResponse{Message: err.Error()})
 		return
 	}
 
@@ -41,7 +41,8 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 
 	swiftCodesResponse, err := swiftService.GetSwiftCodesByCountry(countryISO2)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		status := errors.MapToStatusCode(err)
+		c.JSON(status, models.MessageResponse{Message: err.Error()})
 		return
 	}
 
@@ -57,27 +58,29 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	var swiftCodeRequest models.SwiftCode
 	if err := c.ShouldBindJSON(&swiftCodeRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
+		c.JSON(http.StatusBadRequest, models.MessageResponse{Message: "Invalid input data"})
 		return
 	}
 
 	message, err := swiftService.AddSwiftCode(&swiftCodeRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": message["message"]})
+		status := errors.MapToStatusCode(err)
+		c.JSON(status, models.MessageResponse{Message: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": message["message"]})
+	c.JSON(http.StatusOK, models.MessageResponse{Message: message})
 }
 
 func DeleteSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
-	swiftCode := c.Param("swift-code")
+	swiftCode := strings.ToUpper(c.Param("swift-code"))
 
-	deletedCount, err := swiftService.DeleteSwiftCode(swiftCode)
+	message, err := swiftService.DeleteSwiftCode(swiftCode)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		status := errors.MapToStatusCode(err)
+		c.JSON(status, models.MessageResponse{Message: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Deleted %d records", deletedCount)})
+	c.JSON(http.StatusOK, models.MessageResponse{Message: message})
 }

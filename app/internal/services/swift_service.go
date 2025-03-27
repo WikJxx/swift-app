@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
+	"swift-app/internal/errors"
 	"swift-app/internal/models"
-	countries_check "swift-app/internal/utils"
+	"swift-app/internal/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,231 +21,187 @@ func NewSwiftCodeService(db *mongo.Collection) *SwiftCodeService {
 }
 
 func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftCode, error) {
-	if len(swiftCode) < 8 || len(swiftCode) > 11 {
-		return nil, fmt.Errorf("invalid SWIFT code length: must be between 8 and 11 characters")
+	swiftCode = strings.ToUpper(swiftCode)
+	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
+		return nil, err
 	}
-	var swiftCodeDetails models.SwiftCode
 
+	var swiftCodeDetails models.SwiftCode
 	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode}).Decode(&swiftCodeDetails)
 	if err == nil {
 		return &swiftCodeDetails, nil
 	}
 
-	headquarterSwiftCode := swiftCode[:8] + "XXX"
-	var headquarter models.SwiftCode
-	filter := bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}
-	err = s.DB.FindOne(context.Background(), filter).Decode(&headquarter)
+	headquarter, err := utils.GetHeadquarterBySwiftCode(s.DB, swiftCode)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("missing headquarter: %s", headquarterSwiftCode)
-		}
-		return nil, fmt.Errorf("database error while searching for headquarter: %v", err)
+		return nil, err
 	}
 
 	for _, branch := range headquarter.Branches {
 		if branch.SwiftCode == swiftCode {
-
 			return &models.SwiftCode{
 				Address:       branch.Address,
 				BankName:      branch.BankName,
 				CountryISO2:   branch.CountryISO2,
 				CountryName:   headquarter.CountryName,
-				IsHeadquarter: branch.IsHeadquarter,
+				IsHeadquarter: false,
 				SwiftCode:     branch.SwiftCode,
 			}, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no branch found for swiftCode %s", swiftCode)
+	return nil, fmt.Errorf("%w: no branch found for SWIFT code %s", errors.ErrNotFound, swiftCode)
 }
 
 func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.CountrySwiftCodesResponse, error) {
 	countryISO2 = strings.ToUpper(countryISO2)
-	if len(countryISO2) != 2 {
-		return nil, fmt.Errorf("invalid country ISO2 code: must be exactly 2 characters")
-	}
-
-	for _, r := range countryISO2 {
-		if r < 'A' || r > 'Z' {
-			return nil, fmt.Errorf("invalid country ISO2 code: must contain only letters")
-		}
-	}
-
-	countries, err := countries_check.LoadCountries()
+	_, err := utils.LoadAndValidateCountry(countryISO2)
 	if err != nil {
-		return nil, fmt.Errorf("error loading countries list: %v", err)
-	}
-	if _, ok := countries[countryISO2]; !ok {
-		return nil, fmt.Errorf("country ISO2 code '%s' not found in countries list", countryISO2)
+		return nil, err
 	}
 
 	cursor, err := s.DB.Find(context.Background(), bson.M{"countryISO2": countryISO2})
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving SWIFT codes for country %s: %v", countryISO2, err)
+		return nil, fmt.Errorf("%w: error retrieving SWIFT codes for country %s", errors.ErrInternal, countryISO2)
 	}
 	defer cursor.Close(context.Background())
 
 	var swiftCodes []models.SwiftCode
 	if err = cursor.All(context.Background(), &swiftCodes); err != nil {
-		return nil, fmt.Errorf("error decoding SWIFT codes for country %s: %v", countryISO2, err)
+		return nil, fmt.Errorf("%w: error decoding SWIFT codes for country %s", errors.ErrInternal, countryISO2)
 	}
-
 	if len(swiftCodes) == 0 {
-		return nil, fmt.Errorf("no swift codes found for country %s", countryISO2)
+		return nil, fmt.Errorf("%w: no SWIFT codes found for country %s", errors.ErrNotFound, countryISO2)
 	}
 
-	var countryName string
-	if len(swiftCodes) > 0 {
-		countryName = swiftCodes[0].CountryName
-	}
-
+	var countryName = swiftCodes[0].CountryName
 	var allSwiftCodes []models.SwiftCode
 	var allBranchCodes []models.SwiftCode
 	swiftCodeSet := make(map[string]bool)
 
 	for _, swiftCode := range swiftCodes {
-		if swiftCode.IsHeadquarter {
-			if _, exists := swiftCodeSet[swiftCode.SwiftCode]; !exists {
-				allSwiftCodes = append(allSwiftCodes, models.SwiftCode{
-					Address:       swiftCode.Address,
-					BankName:      swiftCode.BankName,
-					CountryISO2:   swiftCode.CountryISO2,
-					IsHeadquarter: swiftCode.IsHeadquarter,
-					SwiftCode:     swiftCode.SwiftCode,
-				})
-				swiftCodeSet[swiftCode.SwiftCode] = true
-			}
+		if swiftCode.IsHeadquarter && !swiftCodeSet[swiftCode.SwiftCode] {
+			allSwiftCodes = append(allSwiftCodes, models.SwiftCode{
+				Address:       swiftCode.Address,
+				BankName:      swiftCode.BankName,
+				CountryISO2:   swiftCode.CountryISO2,
+				IsHeadquarter: true,
+				SwiftCode:     swiftCode.SwiftCode,
+			})
+			swiftCodeSet[swiftCode.SwiftCode] = true
 		}
 
-		if len(swiftCode.Branches) > 0 {
-			for _, branch := range swiftCode.Branches {
-				if _, exists := swiftCodeSet[branch.SwiftCode]; !exists {
-					allBranchCodes = append(allBranchCodes, models.SwiftCode{
-						Address:       branch.Address,
-						BankName:      branch.BankName,
-						CountryISO2:   branch.CountryISO2,
-						IsHeadquarter: branch.IsHeadquarter,
-						SwiftCode:     branch.SwiftCode,
-					})
-					swiftCodeSet[branch.SwiftCode] = true
-				}
+		for _, branch := range swiftCode.Branches {
+			if !swiftCodeSet[branch.SwiftCode] {
+				allBranchCodes = append(allBranchCodes, models.SwiftCode{
+					Address:       branch.Address,
+					BankName:      branch.BankName,
+					CountryISO2:   branch.CountryISO2,
+					IsHeadquarter: false,
+					SwiftCode:     branch.SwiftCode,
+				})
+				swiftCodeSet[branch.SwiftCode] = true
 			}
 		}
 	}
 
 	allSwiftCodes = append(allSwiftCodes, allBranchCodes...)
 
-	response := &models.CountrySwiftCodesResponse{
+	return &models.CountrySwiftCodesResponse{
 		CountryISO2: countryISO2,
 		CountryName: countryName,
 		SwiftCodes:  allSwiftCodes,
-	}
-
-	return response, nil
+	}, nil
 }
 
-func (s *SwiftCodeService) AddSwiftCode(swiftCodeRequest *models.SwiftCode) (map[string]string, error) {
-	if len(swiftCodeRequest.SwiftCode) < 8 || len(swiftCodeRequest.SwiftCode) > 11 {
-		return map[string]string{"message": "SWIFT code cannot be longer than 11 characters and smaller than 8"}, fmt.Errorf("SWIFT code cannot be longer than 11 characters and smaller than 8")
-	}
+func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, error) {
+	request.SwiftCode = strings.ToUpper(request.SwiftCode)
+	request.CountryISO2 = strings.ToUpper(request.CountryISO2)
+	request.CountryName = strings.ToUpper(request.CountryName)
 
-	if len(swiftCodeRequest.CountryISO2) != 2 {
-		return map[string]string{"message": "Country ISO2 code must have 2 characters"}, fmt.Errorf("country ISO2 code must have 2 characters")
+	if err := utils.ValidateSwiftCode(request.SwiftCode); err != nil {
+		return "", err
 	}
-
-	swiftCodeRequest.SwiftCode = strings.ToUpper(swiftCodeRequest.SwiftCode)
-	swiftCodeRequest.CountryISO2 = strings.ToUpper(swiftCodeRequest.CountryISO2)
-	swiftCodeRequest.CountryName = strings.ToUpper(swiftCodeRequest.CountryName)
-	countries, err := countries_check.LoadCountries()
+	if err := utils.ValidateSwiftCodeSuffix(request.SwiftCode, request.IsHeadquarter); err != nil {
+		return "", err
+	}
+	_, err := utils.LoadAndValidateCountryWithName(request.CountryISO2, request.CountryName)
 	if err != nil {
-		return map[string]string{"message": "Error loading countries data"}, err
+		return "", err
 	}
 
-	country, exists := countries[swiftCodeRequest.CountryISO2]
-	if !exists {
-		return map[string]string{"message": "Invalid country ISO2"}, fmt.Errorf("invalid country ISO2: %s", swiftCodeRequest.CountryISO2)
+	doc := bson.M{
+		"swiftCode":     request.SwiftCode,
+		"bankName":      request.BankName,
+		"address":       request.Address,
+		"countryISO2":   request.CountryISO2,
+		"countryName":   request.CountryName,
+		"isHeadquarter": request.IsHeadquarter,
+		"branches":      request.Branches,
+	}
+	if request.IsHeadquarter && request.Branches == nil {
+		doc["branches"] = []bson.M{}
 	}
 
-	if !strings.EqualFold(swiftCodeRequest.CountryName, strings.ToUpper(country.Name)) {
-		return map[string]string{"message": "Country name does not match ISO2"}, fmt.Errorf("country name '%s' does not match ISO2 '%s'", swiftCodeRequest.CountryName, swiftCodeRequest.CountryISO2)
-	}
-
-	swiftCode := bson.M{
-		"swiftCode":     swiftCodeRequest.SwiftCode,
-		"bankName":      swiftCodeRequest.BankName,
-		"address":       swiftCodeRequest.Address,
-		"countryISO2":   swiftCodeRequest.CountryISO2,
-		"countryName":   swiftCodeRequest.CountryName,
-		"isHeadquarter": swiftCodeRequest.IsHeadquarter,
-		"branches":      swiftCodeRequest.Branches,
-	}
-	if swiftCodeRequest.IsHeadquarter && swiftCodeRequest.Branches == nil {
-		swiftCode["branches"] = []bson.M{}
-	}
-
-	if swiftCodeRequest.IsHeadquarter {
-		if !strings.HasSuffix(swiftCodeRequest.SwiftCode, "XXX") {
-			return map[string]string{"message": "Headquarter SWIFT code must end with 'XXX'"}, fmt.Errorf("headquarter SWIFT code must end with 'XXX'")
+	if request.IsHeadquarter {
+		if err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": request.SwiftCode}).Err(); err == nil {
+			return "", fmt.Errorf("%w: headquarter SWIFT code already exists", errors.ErrBadRequest)
 		}
-
-		existingHeadquarter := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCodeRequest.SwiftCode})
-		if existingHeadquarter.Err() == nil {
-			return map[string]string{"message": "Headquarter SWIFT code already exists"}, fmt.Errorf("headquarter SWIFT code already exists")
+		if _, err := s.DB.InsertOne(context.Background(), doc); err != nil {
+			return "", fmt.Errorf("%w: error inserting SWIFT code into the database", errors.ErrInternal)
 		}
-
-		_, err := s.DB.InsertOne(context.Background(), swiftCode)
-		if err != nil {
-			return map[string]string{"message": "Error inserting SWIFT code into the database"}, err
-		}
-		return map[string]string{"message": "Headquarter SWIFT code added successfully"}, nil
+		return "Headquarter SWIFT code added successfully", nil
 	}
 
-	if strings.HasSuffix(swiftCodeRequest.SwiftCode, "XXX") {
-		return map[string]string{"message": "Branch SWIFT code cannot end with 'XXX'"}, fmt.Errorf("branch SWIFT code cannot end with 'XXX'")
-	}
-	headquarterSwiftCode := swiftCodeRequest.SwiftCode[:8] + "XXX"
-	var headquarter models.SwiftCode
-	err = s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterSwiftCode, "isHeadquarter": true}).Decode(&headquarter)
+	headquarter, err := utils.GetHeadquarterBySwiftCode(s.DB, request.SwiftCode)
 	if err != nil {
-		return map[string]string{"message": "Headquarter not found for the branch SWIFT code"}, err
+		return "", err
 	}
-
-	if swiftCodeRequest.CountryISO2 != headquarter.CountryISO2 {
-		return map[string]string{"message": "Branch SWIFT code countryISO does not match headquarter countryISO"}, fmt.Errorf("branch SWIFT code countryISO does not match headquarter countryISO")
+	if request.CountryISO2 != headquarter.CountryISO2 {
+		return "", fmt.Errorf("%w: branch SWIFT code countryISO does not match headquarter countryISO", errors.ErrBadRequest)
 	}
-
 	for _, branch := range headquarter.Branches {
-		if branch.SwiftCode == swiftCodeRequest.SwiftCode {
-			return map[string]string{"message": "Branch SWIFT code already exists"}, fmt.Errorf("branch SWIFT code already exists")
+		if branch.SwiftCode == request.SwiftCode {
+			return "", fmt.Errorf("%w: branch SWIFT code already exists", errors.ErrBadRequest)
 		}
 	}
 
 	branch := bson.M{
-		"swiftCode":     swiftCodeRequest.SwiftCode,
-		"bankName":      swiftCodeRequest.BankName,
-		"address":       swiftCodeRequest.Address,
-		"countryISO2":   swiftCodeRequest.CountryISO2,
+		"swiftCode":     request.SwiftCode,
+		"bankName":      request.BankName,
+		"address":       request.Address,
+		"countryISO2":   request.CountryISO2,
 		"isHeadquarter": false,
 	}
-
-	_, err = s.DB.UpdateOne(
-		context.Background(),
+	if _, err := s.DB.UpdateOne(context.Background(),
 		bson.M{"swiftCode": headquarter.SwiftCode},
-		bson.M{"$push": bson.M{"branches": branch}},
-	)
-	if err != nil {
-		return map[string]string{"message": "Error updating headquarter with branch"}, err
+		bson.M{"$push": bson.M{"branches": branch}}); err != nil {
+		return "", fmt.Errorf("%w: error updating headquarter with branch", errors.ErrInternal)
 	}
 
-	return map[string]string{"message": "Branch SWIFT code added to headquarter successfully"}, nil
+	return "Branch SWIFT code added to headquarter successfully", nil
 }
 
-func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (int64, error) {
+func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 	swiftCode = strings.ToUpper(swiftCode)
+	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
+		return "", err
+	}
+	isHeadquarter := strings.HasSuffix(swiftCode, "XXX")
+	if err := utils.ValidateSwiftCodeSuffix(swiftCode, isHeadquarter); err != nil {
+		return "", err
+	}
 
-	var headquarter models.SwiftCode
-	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode, "isHeadquarter": true}).Decode(&headquarter)
-	if err == nil {
+	if isHeadquarter {
+		var headquarter models.SwiftCode
+		err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": swiftCode, "isHeadquarter": true}).Decode(&headquarter)
+		if err == mongo.ErrNoDocuments {
+			return "", fmt.Errorf("%w: headquarter %s not found, cannot delete", errors.ErrNotFound, swiftCode)
+		}
+		if err != nil {
+			return "", fmt.Errorf("%w: error while checking headquarter %s", errors.ErrInternal, swiftCode)
+		}
+
 		result, err := s.DB.DeleteMany(context.Background(), bson.M{
 			"$or": []bson.M{
 				{"swiftCode": swiftCode},
@@ -253,25 +209,35 @@ func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (int64, error) {
 			},
 		})
 		if err != nil {
-			return 0, fmt.Errorf("error deleting headquarter and branches: %v", err)
+			return "", fmt.Errorf("%w: error deleting headquarter %s and its branches", errors.ErrInternal, swiftCode)
 		}
 		if result.DeletedCount == 0 {
-			return 0, errors.New("SWIFT code not found")
+			return "", fmt.Errorf("%w: headquarter %s was not deleted", errors.ErrInternal, swiftCode)
 		}
-		return result.DeletedCount, nil
+		return fmt.Sprintf("Deleted hadquarter %s and its branches", swiftCode), nil
 	}
 
-	updateResult, err := s.DB.UpdateOne(
+	headquarterCode := swiftCode[:8] + "XXX"
+	var headquarter models.SwiftCode
+	err := s.DB.FindOne(context.Background(), bson.M{"swiftCode": headquarterCode, "isHeadquarter": true}).Decode(&headquarter)
+	if err == mongo.ErrNoDocuments {
+		return "", fmt.Errorf("%w: cannot delete branch %s because headquarter %s does not exist", errors.ErrNotFound, swiftCode, headquarterCode)
+	}
+	if err != nil {
+		return "", fmt.Errorf("%w: error checking headquarter for branch %s", errors.ErrInternal, swiftCode)
+	}
+
+	update, err := s.DB.UpdateOne(
 		context.Background(),
-		bson.M{"branches.swiftCode": swiftCode},
+		bson.M{"swiftCode": headquarterCode},
 		bson.M{"$pull": bson.M{"branches": bson.M{"swiftCode": swiftCode}}},
 	)
 	if err != nil {
-		return 0, fmt.Errorf("error removing branch: %v", err)
+		return "", fmt.Errorf("%w: error deleting branch %s", errors.ErrInternal, swiftCode)
 	}
-	if updateResult.MatchedCount == 0 {
-		return 0, errors.New("SWIFT code not found")
+	if update.ModifiedCount == 0 {
+		return "", fmt.Errorf("%w: branch %s not found under headquarter %s", errors.ErrNotFound, swiftCode, headquarterCode)
 	}
 
-	return updateResult.ModifiedCount, nil
+	return fmt.Sprintf("Branch %s deleted successfully", swiftCode), nil
 }

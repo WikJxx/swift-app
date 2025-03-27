@@ -36,33 +36,35 @@ func TestGetSwiftCode(t *testing.T) {
 		"countryName":   "United States",
 		"isHeadquarter": true,
 	})
-	assert.NoError(t, err, "Failed to insert test data")
+	assert.NoError(t, err)
 
 	r := setupRouter()
-
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/v1/swift-codes/AAAABBBXXX", nil)
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response models.SwiftCode
 	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Test Bank", response.BankName, "Expected bank name 'Test Bank'")
+	assert.NoError(t, err)
+	assert.Equal(t, "Test Bank", response.BankName)
 }
 
 func TestGetSwiftCode_NotFound(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	r := setupRouter()
-
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/v1/swift-codes/NONEXISTXXX", nil)
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNotFound, w.Code, "Expected status code 404")
-	assert.Contains(t, w.Body.String(), "missing headquarter: NONEXISTXXX", "Expected error message in response")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response models.MessageResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response.Message, "headquarter not found: NONEXISTXXX")
 }
 
 func TestAddSwiftCode(t *testing.T) {
@@ -85,12 +87,12 @@ func TestAddSwiftCode(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response models.MessageResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Headquarter SWIFT code added successfully", response["message"], "Expected success message")
+	assert.NoError(t, err)
+	assert.Equal(t, "Headquarter SWIFT code added successfully", response.Message)
 }
 
 func TestDeleteSwiftCode(t *testing.T) {
@@ -103,18 +105,17 @@ func TestDeleteSwiftCode(t *testing.T) {
 		"countryName":   "United Kingdom",
 		"isHeadquarter": true,
 	})
-	assert.NoError(t, err, "Failed to insert test data")
+	assert.NoError(t, err)
 
 	r := setupRouter()
-
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("DELETE", "/v1/swift-codes/XYZBANKXXX", nil)
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response models.MessageResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Deleted 1 records", response["message"], "Expected deletion message")
+	assert.NoError(t, err)
+	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response.Message)
 }

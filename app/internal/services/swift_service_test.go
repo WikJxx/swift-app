@@ -13,6 +13,8 @@ import (
 )
 
 func TestAddSwiftCode(t *testing.T) {
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
+
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := &models.SwiftCode{
@@ -26,7 +28,7 @@ func TestAddSwiftCode(t *testing.T) {
 
 	msg, err := service.AddSwiftCode(swiftCode)
 	assert.NoError(t, err, "Adding a SWIFT code should not return an error")
-	assert.Equal(t, "Headquarter SWIFT code added successfully", msg["message"])
+	assert.Equal(t, "Headquarter SWIFT code added successfully", msg)
 
 	var result models.SwiftCode
 	err = service.DB.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBBXXX"}).Decode(&result)
@@ -34,7 +36,10 @@ func TestAddSwiftCode(t *testing.T) {
 }
 
 func TestGetSwiftCodeDetails(t *testing.T) {
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
+
 	service := services.NewSwiftCodeService(testutils.Collection)
+
 	swiftCode := bson.M{
 		"swiftCode":     "AAAABBBXXX",
 		"bankName":      "Test Bank",
@@ -52,6 +57,8 @@ func TestGetSwiftCodeDetails(t *testing.T) {
 }
 
 func TestGetSwiftCodesByCountry(t *testing.T) {
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
+
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCodes := []interface{}{
@@ -93,9 +100,9 @@ func TestDeleteSwiftCode(t *testing.T) {
 	_, err := service.DB.InsertOne(context.Background(), swiftCode)
 	assert.NoError(t, err, "Inserting SWIFT code should not return an error")
 
-	deletedCount, err := service.DeleteSwiftCode("XYZBANKXXX")
+	response, err := service.DeleteSwiftCode("XYZBANKXXX")
 	assert.NoError(t, err, "Deleting SWIFT code should not return an error")
-	assert.Equal(t, int64(1), deletedCount)
+	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response, "Expected deletion message")
 
 	err = service.DB.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANKXXX"}).Decode(&swiftCode)
 	assert.Error(t, err, "SWIFT code should be removed from the database")

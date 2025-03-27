@@ -127,7 +127,7 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	var response map[string]string
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Deleted 1 records", response["message"], "Expected deletion message")
+	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response["message"], "Expected deletion message")
 
 	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANKXXX"}).Decode(&bson.M{})
 	assert.Error(t, err, "SWIFT code should be removed from the database")

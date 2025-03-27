@@ -23,7 +23,6 @@ func clearCollection() {
 
 func TestGetSwiftCode(t *testing.T) {
 	clearCollection()
-
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
@@ -34,20 +33,24 @@ func TestGetSwiftCode(t *testing.T) {
 		"countryName":   "United States",
 		"isHeadquarter": true,
 	})
-	assert.NoError(t, err, "Failed to insert test data")
+	assert.NoError(t, err)
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "swift-code", Value: "AAAABBBXXX"}}
+	c.Params = []gin.Param{{Key: "swift-code", Value: "aaaabbbxxx"}} // lowercase, test ToUpper
 
 	GetSwiftCode(c, service)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
-	assert.Contains(t, w.Body.String(), "Test Bank", "Expected bank name in response")
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response models.SwiftCode
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "Test Bank", response.BankName)
+	assert.Equal(t, "AAAABBBXXX", response.SwiftCode)
 }
 
 func TestGetSwiftCode_NotFound(t *testing.T) {
 	clearCollection()
-
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	w := httptest.NewRecorder()
@@ -56,13 +59,15 @@ func TestGetSwiftCode_NotFound(t *testing.T) {
 
 	GetSwiftCode(c, service)
 
-	assert.Equal(t, http.StatusNotFound, w.Code, "Expected status code 404")
-	assert.Contains(t, w.Body.String(), "missing headquarter: NONEXISTXXX", "Expected error message in response")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	var response models.MessageResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response.Message, "headquarter NONEXISTXXX is missing")
 }
 
 func TestGetSwiftCodesByCountry(t *testing.T) {
 	clearCollection()
-
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	_, err := testutils.Collection.InsertMany(context.Background(), []interface{}{
@@ -81,25 +86,25 @@ func TestGetSwiftCodesByCountry(t *testing.T) {
 			"isHeadquarter": true,
 		},
 	})
-	assert.NoError(t, err, "Failed to insert test data")
+	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "countryISO2code", Value: "US"}}
+	c.Params = []gin.Param{{Key: "countryISO2code", Value: "us"}} // test lowercase input
 
 	GetSwiftCodesByCountry(c, service)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response models.CountrySwiftCodesResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, 2, len(response.SwiftCodes), "Expected 2 SWIFT codes")
+	assert.NoError(t, err)
+	assert.Equal(t, "US", response.CountryISO2)
+	assert.Equal(t, 2, len(response.SwiftCodes))
 }
 
 func TestAddSwiftCode(t *testing.T) {
 	clearCollection()
-
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := models.SwiftCode{
@@ -119,17 +124,16 @@ func TestAddSwiftCode(t *testing.T) {
 
 	AddSwiftCode(c, service)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response models.MessageResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Headquarter SWIFT code added successfully", response["message"], "Expected success message")
+	assert.NoError(t, err)
+	assert.Equal(t, "Headquarter SWIFT code added successfully", response.Message)
 }
 
 func TestDeleteSwiftCode(t *testing.T) {
 	clearCollection()
-
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
@@ -139,7 +143,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 		"countryName":   "United Kingdom",
 		"isHeadquarter": true,
 	})
-	assert.NoError(t, err, "Failed to insert test data")
+	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -147,10 +151,10 @@ func TestDeleteSwiftCode(t *testing.T) {
 
 	DeleteSwiftCode(c, service)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response models.MessageResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Deleted 1 records", response["message"], "Expected deletion message")
+	assert.NoError(t, err)
+	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response.Message)
 }

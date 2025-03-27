@@ -3,12 +3,14 @@ package database
 import (
 	"context"
 	"testing"
+	"time"
 
 	"swift-app/internal/models"
 	utils "swift-app/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func clearCollection() {
@@ -19,9 +21,7 @@ func TestInitMongoDB(t *testing.T) {
 	clearCollection()
 
 	uri, err := utils.MongoContainer.ConnectionString(context.Background())
-	if err != nil {
-		t.Fatalf("Failed to retrieve MongoDB URI: %v", err)
-	}
+	assert.NoError(t, err, "Failed to retrieve MongoDB URI")
 
 	err = InitMongoDB(uri, "swiftDB", "swiftCodes")
 	assert.NoError(t, err, "InitMongoDB should not return an error")
@@ -53,31 +53,91 @@ func TestIsCollectionEmpty(t *testing.T) {
 	assert.True(t, empty, "Collection should be empty")
 }
 
-func TestSaveSwiftCodes(t *testing.T) {
+func TestSaveHeadquarters(t *testing.T) {
 	clearCollection()
-	swiftCodes := []models.SwiftCode{
+
+	hqs := []models.SwiftCode{
 		{
-			SwiftCode:     "AAAABBBXXX",
-			BankName:      "Test Bank",
-			Address:       "123 Test St",
+			SwiftCode:     "HQBANKXXX",
+			BankName:      "HQ Bank",
+			Address:       "HQ Street",
 			CountryISO2:   "US",
 			CountryName:   "United States",
 			IsHeadquarter: true,
 		},
-		{
-			SwiftCode:     "ZZZZPPP123",
-			BankName:      "Bank B",
-			Address:       "456 Test St",
-			CountryISO2:   "US",
-			CountryName:   "United States",
-			IsHeadquarter: false,
-		},
 	}
 
-	err := SaveSwiftCodes(swiftCodes)
-	assert.NoError(t, err, "SaveSwiftCodes should not return an error")
+	hqAdded, hqExisting, hqSkipped, err := SaveHeadquarters(hqs)
+	assert.NoError(t, err, "SaveHeadquarters should not return an error")
 
-	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{})
-	assert.NoError(t, err, "Failed to count documents")
-	assert.Equal(t, int64(2), count, "Expected 2 documents in the collection")
+	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count, "Expected 1 HQ in the collection")
+
+	assert.Equal(t, 1, hqAdded, "Expected 1 HQ added")
+	assert.Equal(t, 0, hqExisting, "Expected 0 existing HQ")
+	assert.Equal(t, 0, hqSkipped, "Expected 0 skipped HQ")
+}
+
+func TestSaveBranches(t *testing.T) {
+	clearCollection()
+
+	hq := models.SwiftCode{
+		SwiftCode:     "BRNBANK1XXX",
+		BankName:      "BRN Bank",
+		Address:       "HQ St",
+		CountryISO2:   "PL",
+		CountryName:   "Poland",
+		IsHeadquarter: true,
+	}
+
+	_, _, _, err := SaveHeadquarters([]models.SwiftCode{hq})
+	assert.NoError(t, err, "SaveHeadquarters should not return an error")
+
+	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count, "Expected 1 HQ in the collection")
+
+	branch := models.SwiftCode{
+		SwiftCode:     "BRNBANK1ABC",
+		BankName:      "BRN Branch",
+		Address:       "Branch Blvd",
+		CountryISO2:   "PL",
+		CountryName:   "Poland",
+		IsHeadquarter: false,
+	}
+
+	branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := SaveBranches([]models.SwiftCode{branch})
+	assert.NoError(t, err, "SaveBranches should not return an error")
+
+	var result bson.M
+	found := false
+	for i := 0; i < 10; i++ {
+		err = GetCollection().FindOne(context.Background(), bson.M{"swiftCode": "BRNBANK1XXX"}).Decode(&result)
+		if err == nil {
+			found = true
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.True(t, found, "Expected HQ to be found in database")
+
+	rawBranches, ok := result["branches"].(primitive.A)
+	assert.True(t, ok, "Expected branches array in HQ document")
+
+	branchFound := false
+	for _, b := range rawBranches {
+		if doc, ok := b.(bson.M); ok {
+			if doc["swiftCode"] == branch.SwiftCode {
+				branchFound = true
+				break
+			}
+		}
+	}
+	assert.True(t, branchFound, "Expected 1 branch under HQ")
+
+	assert.Equal(t, 1, branchesAdded, "Expected 1 branch added")
+	assert.Equal(t, 0, branchesDuplicate, "Expected 0 duplicate branches")
+	assert.Equal(t, 0, branchesMissingHQ, "Expected 0 missing HQ")
+	assert.Equal(t, 0, branchesSkipped, "Expected 0 skipped branches")
 }

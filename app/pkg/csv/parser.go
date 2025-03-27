@@ -6,30 +6,10 @@ import (
 	"os"
 	"strings"
 	"swift-app/internal/models"
-	countries_check "swift-app/internal/utils"
+	"swift-app/internal/utils"
 )
 
 func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
-	records, err := readCSV(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	header := normalizeHeader(records[0])
-	fieldIndexes := extractFieldIndexes(header)
-	if fieldIndexes["SWIFT CODE"] == -1 {
-		return nil, fmt.Errorf("missing required field: SWIFT CODE")
-	}
-
-	countries, err := countries_check.LoadCountries()
-	if err != nil {
-		return nil, fmt.Errorf("error loading country data: %v", err)
-	}
-
-	return processRecords(records[1:], fieldIndexes, countries)
-}
-
-func readCSV(filePath string) ([][]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -38,18 +18,35 @@ func readCSV(filePath string) ([][]string, error) {
 
 	reader := csv.NewReader(file)
 	reader.LazyQuotes = true
-	return reader.ReadAll()
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	header := sanitizeHeader(records[0])
+	fieldIndexes := getFieldIndexes(header)
+
+	if fieldIndexes["SWIFT CODE"] == -1 {
+		return nil, fmt.Errorf("missing required field: SWIFT CODE")
+	}
+
+	countries, err := utils.LoadCountries()
+	if err != nil {
+		return nil, fmt.Errorf("error loading country data: %v", err)
+	}
+
+	return processRecords(records[1:], fieldIndexes, countries)
 }
 
-func normalizeHeader(header []string) []string {
+func sanitizeHeader(header []string) []string {
 	for i, h := range header {
 		header[i] = strings.TrimSpace(h)
 	}
 	return header
 }
 
-func extractFieldIndexes(header []string) map[string]int {
-	indexes := map[string]int{
+func getFieldIndexes(header []string) map[string]int {
+	fieldIndexes := map[string]int{
 		"SWIFT CODE":        -1,
 		"COUNTRY ISO2 CODE": -1,
 		"NAME":              -1,
@@ -57,128 +54,85 @@ func extractFieldIndexes(header []string) map[string]int {
 		"COUNTRY NAME":      -1,
 	}
 	for i, field := range header {
-		upper := strings.ToUpper(field)
-		if _, ok := indexes[upper]; ok {
-			indexes[upper] = i
+		upperField := strings.ToUpper(field)
+		if _, exists := fieldIndexes[upperField]; exists {
+			fieldIndexes[upperField] = i
 		}
 	}
-	return indexes
+	return fieldIndexes
 }
 
-func processRecords(records [][]string, idx map[string]int, countries map[string]models.Country) ([]models.SwiftCode, error) {
-	var swiftCodes []models.SwiftCode
-	hqMap := make(map[string]*models.SwiftCode)
-	branchQueue := []*models.SwiftBranch{}
-	uniqueHQ := make(map[string]bool)
-	uniqueBranches := make(map[string]bool)
+func processRecords(records [][]string, fieldIndexes map[string]int, countries map[string]models.Country) ([]models.SwiftCode, error) {
+	swiftCodes := []models.SwiftCode{}
+	uniqueCodes := make(map[string]bool)
 
 	for _, record := range records {
-		swiftCode, countryISO2 := strings.ToUpper(record[idx["SWIFT CODE"]]), strings.ToUpper(record[idx["COUNTRY ISO2 CODE"]])
+		swiftCode, countryISO2, bankName, address, countryName := extractRecordData(record, fieldIndexes)
 
-		if swiftCode == "" || countryISO2 == "" || len(countryISO2) != 2 || len(swiftCode) < 8 || len(swiftCode) > 11 {
-			fmt.Printf("Warning: Invalid entry for code: %s\n", swiftCode)
+		if err := validateRecord(swiftCode, countryISO2, bankName, address, countryName, countries); err != nil {
+			fmt.Printf("Warning: %s - %v\n", swiftCode, err)
 			continue
 		}
 
-		bankName := strings.ToUpper(record[idx["NAME"]])
-		address := getOptionalField(record, idx, "ADDRESS")
-		countryName := strings.ToUpper(record[idx["COUNTRY NAME"]])
-		isHQ := strings.HasSuffix(swiftCode, "XXX")
-
-		country, ok := countries[countryISO2]
-		if !ok {
-			fmt.Printf("Warning: Invalid country ISO2 for code %s\n", swiftCode)
+		if uniqueCodes[swiftCode] {
 			continue
 		}
-		if !strings.EqualFold(countryName, country.Name) {
-			fmt.Printf("Warning: Country name '%s' does not match ISO2 '%s'\n", countryName, countryISO2)
+		uniqueCodes[swiftCode] = true
+
+		isHeadquarter := strings.HasSuffix(swiftCode, "XXX")
+		if err := utils.ValidateSwiftCodeSuffix(swiftCode, isHeadquarter); err != nil {
+			fmt.Printf("Warning: %s - %v\n", swiftCode, err)
 			continue
 		}
 
-		if isHQ {
-			processHeadquarter(swiftCode, countryISO2, bankName, address, countryName, &swiftCodes, hqMap, &branchQueue, uniqueHQ)
+		if isHeadquarter {
+			swiftCodes = append(swiftCodes, models.SwiftCode{
+				SwiftCode:     swiftCode,
+				CountryISO2:   countryISO2,
+				BankName:      bankName,
+				Address:       address,
+				CountryName:   countryName,
+				IsHeadquarter: true,
+				Branches:      []models.SwiftBranch{},
+			})
 		} else {
-			processBranch(swiftCode, countryISO2, bankName, address, hqMap, &branchQueue, uniqueBranches)
+			swiftCodes = append(swiftCodes, models.SwiftCode{
+				SwiftCode:     swiftCode,
+				CountryISO2:   countryISO2,
+				BankName:      bankName,
+				Address:       address,
+				CountryName:   countryName,
+				IsHeadquarter: false,
+			})
 		}
 	}
 
-	reportUnmatchedBranches(branchQueue)
 	return swiftCodes, nil
 }
 
-func getOptionalField(record []string, idx map[string]int, key string) string {
-	if i, ok := idx[key]; ok && i < len(record) {
-		return strings.TrimSpace(strings.ToUpper(record[i]))
-	}
-	return ""
+func extractRecordData(record []string, fieldIndexes map[string]int) (string, string, string, string, string) {
+	swiftCode := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["SWIFT CODE"]]))
+	countryISO2 := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]]))
+	bankName := strings.ToUpper(record[fieldIndexes["NAME"]])
+	address := strings.ToUpper(record[fieldIndexes["ADDRESS"]])
+	countryName := strings.ToUpper(record[fieldIndexes["COUNTRY NAME"]])
+
+	return swiftCode, countryISO2, bankName, address, countryName
 }
 
-func processHeadquarter(code, iso2, name, address, country string,
-	swiftCodes *[]models.SwiftCode,
-	hqMap map[string]*models.SwiftCode,
-	branchQueue *[]*models.SwiftBranch,
-	unique map[string]bool) {
-
-	if unique[code] {
-		return
+func validateRecord(swiftCode, countryISO2, bankName, address, countryName string, countries map[string]models.Country) error {
+	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
+		return fmt.Errorf("invalid SWIFT code: %v", err)
 	}
-	unique[code] = true
-
-	hq := models.SwiftCode{
-		SwiftCode:     code,
-		CountryISO2:   iso2,
-		BankName:      name,
-		Address:       address,
-		CountryName:   country,
-		IsHeadquarter: true,
-		Branches:      []models.SwiftBranch{},
+	if err := utils.ValidateCountryISO2(countryISO2); err != nil {
+		return fmt.Errorf("invalid ISO2 country code: %v", err)
+	}
+	if err := utils.ValidateCountryExistence(countryISO2, countries); err != nil {
+		return fmt.Errorf("invalid country: %v", err)
+	}
+	if err := utils.ValidateCountryNameMatch(countryISO2, countryName, countries); err != nil {
+		return fmt.Errorf("country name mismatch: %v", err)
 	}
 
-	branches := []models.SwiftBranch{}
-	hqPrefix := code[:8]
-	remainingQueue := []*models.SwiftBranch{}
-	for _, b := range *branchQueue {
-		if strings.HasPrefix(b.SwiftCode, hqPrefix) {
-			branches = append(branches, *b)
-		} else {
-			remainingQueue = append(remainingQueue, b)
-		}
-	}
-	hq.Branches = branches
-	*branchQueue = remainingQueue
-
-	hqMap[code] = &hq
-	*swiftCodes = append(*swiftCodes, hq)
-}
-
-func processBranch(code, iso2, name, address string,
-	hqMap map[string]*models.SwiftCode,
-	branchQueue *[]*models.SwiftBranch,
-	unique map[string]bool) {
-
-	if unique[code] {
-		return
-	}
-	unique[code] = true
-
-	branch := models.SwiftBranch{
-		SwiftCode:     code,
-		BankName:      name,
-		Address:       address,
-		CountryISO2:   iso2,
-		IsHeadquarter: false,
-	}
-
-	hqCode := code[:8] + "XXX"
-	if hq, found := hqMap[hqCode]; found {
-		hq.Branches = append(hq.Branches, branch)
-	} else {
-		*branchQueue = append(*branchQueue, &branch)
-	}
-}
-
-func reportUnmatchedBranches(queue []*models.SwiftBranch) {
-	for _, b := range queue {
-		fmt.Printf("Warning: Branch %s does not have a matching headquarter.\n", b.SwiftCode)
-	}
+	return nil
 }

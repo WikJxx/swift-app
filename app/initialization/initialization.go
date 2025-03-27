@@ -2,8 +2,8 @@ package initialization
 
 import (
 	"fmt"
-	"log"
 	"swift-app/database"
+	"swift-app/internal/models"
 	parser "swift-app/pkg/csv"
 )
 
@@ -15,26 +15,30 @@ func InitializeDatabase(uri, dbName, collectionName string) error {
 	return nil
 }
 
-func ImportDataIfNeeded(csvPath string) error {
-	isEmpty, err := database.IsCollectionEmpty()
+func ImportData(csvPath string) (int, int, int, int, int, int, int, error) {
+	swiftCodes, err := parser.LoadSwiftCodes(csvPath)
 	if err != nil {
-		return fmt.Errorf("failed to check if collection is empty: %v", err)
+		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to load swift codes: %v", err)
 	}
 
-	if isEmpty {
-		swiftCodes, err := parser.LoadSwiftCodes(csvPath)
-		if err != nil {
-			return fmt.Errorf("failed to load swift codes: %v", err)
+	var hqList, branchList []models.SwiftCode
+	for _, code := range swiftCodes {
+		if code.IsHeadquarter {
+			hqList = append(hqList, code)
+		} else {
+			branchList = append(branchList, code)
 		}
-
-		err = database.SaveSwiftCodes(swiftCodes)
-		if err != nil {
-			return fmt.Errorf("failed to save swift codes: %v", err)
-		}
-		log.Println("Data imported successfully.")
-	} else {
-		log.Println("Collection is not empty. Skipping data import.")
 	}
 
-	return nil
+	hqAdded, hqExisting, hqSkipped, err := database.SaveHeadquarters(hqList)
+	if err != nil {
+		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save HQs: %v", err)
+	}
+
+	branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := database.SaveBranches(branchList)
+	if err != nil {
+		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save branches: %v", err)
+	}
+
+	return hqAdded, hqExisting, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, nil
 }

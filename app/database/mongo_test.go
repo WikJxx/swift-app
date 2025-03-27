@@ -67,7 +67,7 @@ func TestSaveHeadquarters(t *testing.T) {
 		},
 	}
 
-	hqAdded, hqExisting, hqSkipped, err := SaveHeadquarters(hqs)
+	hqAdded, hqSkipped, err := SaveHeadquarters(hqs)
 	assert.NoError(t, err, "SaveHeadquarters should not return an error")
 
 	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
@@ -75,7 +75,6 @@ func TestSaveHeadquarters(t *testing.T) {
 	assert.Equal(t, int64(1), count, "Expected 1 HQ in the collection")
 
 	assert.Equal(t, 1, hqAdded, "Expected 1 HQ added")
-	assert.Equal(t, 0, hqExisting, "Expected 0 existing HQ")
 	assert.Equal(t, 0, hqSkipped, "Expected 0 skipped HQ")
 }
 
@@ -91,7 +90,7 @@ func TestSaveBranches(t *testing.T) {
 		IsHeadquarter: true,
 	}
 
-	_, _, _, err := SaveHeadquarters([]models.SwiftCode{hq})
+	_, _, err := SaveHeadquarters([]models.SwiftCode{hq})
 	assert.NoError(t, err, "SaveHeadquarters should not return an error")
 
 	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})

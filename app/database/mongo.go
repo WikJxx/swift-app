@@ -172,16 +172,15 @@ func CloseMongoDB() error {
 func GetCollection() *mongo.Collection {
 	return collection
 }
-func SaveHeadquarters(hqList []models.SwiftCode) (int, int, int, error) {
+func SaveHeadquarters(hqList []models.SwiftCode) (int, int, error) {
 	hqAdded := 0
-	hqExisting := 0
 	hqSkipped := 0
 
 	for _, hq := range hqList {
 		filter := bson.M{"swiftCode": hq.SwiftCode}
 		count, err := collection.CountDocuments(context.Background(), filter)
 		if err != nil {
-			return hqAdded, hqExisting, hqSkipped, fmt.Errorf("error checking HQ existence: %v", err)
+			return hqAdded, hqSkipped, fmt.Errorf("error checking HQ existence: %v", err)
 		}
 
 		if count == 0 {
@@ -195,16 +194,15 @@ func SaveHeadquarters(hqList []models.SwiftCode) (int, int, int, error) {
 				"branches":      []interface{}{},
 			})
 			if err != nil {
-				return hqAdded, hqExisting, hqSkipped, fmt.Errorf("failed to insert HQ: %v", err)
+				return hqAdded, hqSkipped, fmt.Errorf("failed to insert HQ: %v", err)
 			}
 			hqAdded++
 		} else {
-			hqExisting++
-			hqSkipped++ // Przypisujemy, że te HQ zostały pominięte z powodu ich wcześniejszego istnienia
+			hqSkipped++
 		}
 	}
 
-	return hqAdded, hqExisting, hqSkipped, nil
+	return hqAdded, hqSkipped, nil
 }
 
 func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {

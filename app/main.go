@@ -46,13 +46,13 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	hqAdded, hqExisting, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := initialization.ImportData(csvPath)
+	hqAdded, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := initialization.ImportData(csvPath)
 	if err != nil {
 		log.Fatalf("Failed to import data: %v", err)
 	}
 
-	log.Printf("\nData import complete. \nHeadquarters added: %d\nHeadquarters existing in DB: %d\nNumber of skipped headquarters: %d\n\n", hqAdded, hqExisting, hqSkipped)
-	log.Printf("\nBranches added: %d\nBranches skipped due to duplicates: %d\nBranches skipped due to missing headquarters: %d\nNumber of skipped branches: %d\n", branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped)
+	log.Printf("\nData import complete. \nHeadquarters added: %d\nNumber of skipped headquarters due to beeing duplicates with records in database: %d\n\n", hqAdded, hqSkipped)
+	log.Printf("\nBranches added: %d\nNumber of skipped branches due to beeing duplicates with records in database: %d\nNumber of branches skipped due to missing headquarters: %d\nNumber of all skipped branches: %d\n", branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped)
 
 	log.Println("Data imported successfully.")
 	handleShutdown()

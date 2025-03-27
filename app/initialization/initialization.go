@@ -15,10 +15,10 @@ func InitializeDatabase(uri, dbName, collectionName string) error {
 	return nil
 }
 
-func ImportData(csvPath string) (int, int, int, int, int, int, int, error) {
+func ImportData(csvPath string) (int, int, int, int, int, int, error) {
 	swiftCodes, err := parser.LoadSwiftCodes(csvPath)
 	if err != nil {
-		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to load swift codes: %v", err)
+		return 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to load swift codes: %v", err)
 	}
 
 	var hqList, branchList []models.SwiftCode
@@ -30,15 +30,15 @@ func ImportData(csvPath string) (int, int, int, int, int, int, int, error) {
 		}
 	}
 
-	hqAdded, hqExisting, hqSkipped, err := database.SaveHeadquarters(hqList)
+	hqAdded, hqSkipped, err := database.SaveHeadquarters(hqList)
 	if err != nil {
-		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save HQs: %v", err)
+		return 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save HQs: %v", err)
 	}
 
 	branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := database.SaveBranches(branchList)
 	if err != nil {
-		return 0, 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save branches: %v", err)
+		return 0, 0, 0, 0, 0, 0, fmt.Errorf("failed to save branches: %v", err)
 	}
 
-	return hqAdded, hqExisting, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, nil
+	return hqAdded, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, nil
 }

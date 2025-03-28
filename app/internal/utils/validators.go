@@ -5,6 +5,7 @@ import (
 	"strings"
 	"swift-app/internal/errors"
 	"swift-app/internal/models"
+	"unicode"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -56,6 +57,11 @@ func ValidateSwiftCode(swiftCode string) error {
 	}
 	if len(swiftCode) != 8 && len(swiftCode) != 11 {
 		return errors.Wrap(errors.ErrBadRequest, "SWIFT code must be 8 or 11 characters")
+	}
+	for _, r := range swiftCode {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			return errors.Wrap(errors.ErrBadRequest, "SWIFT code can only contain letters and digits (no spaces or special characters)")
+		}
 	}
 	return nil
 }

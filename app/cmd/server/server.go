@@ -24,13 +24,6 @@ func StartServer() {
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 
-	if port == "" {
-		port = "8080"
-	}
-	if host == "" {
-		host = "localhost"
-	}
-
 	address := fmt.Sprintf("%s:%s", host, port)
 	fmt.Printf("Server running on http://%s\n", address)
 

@@ -66,7 +66,8 @@ func TestGetSwiftCode_NotFound(t *testing.T) {
 	var response models.MessageResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Contains(t, response.Message, "headquarter NONEXISTXXX is missing")
+	assert.Contains(t, response.Message, "cannot perform action with branch 'NONEXIST' because its headquarter 'NONEXISTXXX' is missing")
+
 }
 
 func TestGetSwiftCodesByCountry(t *testing.T) {
@@ -132,7 +133,7 @@ func TestAddSwiftCode(t *testing.T) {
 	var response models.MessageResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "Headquarter SWIFT code added successfully", response.Message)
+	assert.Equal(t, "headquarter SWIFT code added successfully", response.Message)
 }
 
 func TestDeleteSwiftCode(t *testing.T) {
@@ -159,5 +160,5 @@ func TestDeleteSwiftCode(t *testing.T) {
 	var response models.MessageResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response.Message)
+	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response.Message)
 }

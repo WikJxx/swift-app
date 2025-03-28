@@ -74,7 +74,7 @@ func TestAddSwiftCodeEndpoint(t *testing.T) {
 	var response map[string]string
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Headquarter SWIFT code added successfully", response["message"], "Expected success message")
+	assert.Equal(t, "headquarter SWIFT code added successfully", response["message"], "Expected success message")
 
 	var result models.SwiftCode
 	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBBXXX"}).Decode(&result)
@@ -129,7 +129,7 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	var response map[string]string
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response["message"], "Expected deletion message")
+	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response["message"], "Expected deletion message")
 
 	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANKXXX"}).Decode(&bson.M{})
 	assert.Error(t, err, "SWIFT code should be removed from the database")

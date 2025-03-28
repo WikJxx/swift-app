@@ -1,8 +1,8 @@
 package router
 
 import (
-	"net/http"
 	v1 "swift-app/api/v1"
+	"swift-app/internal/errors"
 	"swift-app/internal/models"
 	"swift-app/internal/services"
 
@@ -36,6 +36,7 @@ func SetupRoutes(r *gin.Engine, swiftService *services.SwiftCodeService) {
 	}
 
 	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, models.MessageResponse{Message: "Endpoint not found. Please check the URL and try again."})
+		err := errors.Wrap(errors.ErrNotFound, "endpoint not found: %s. Please try again", c.Request.URL.Path)
+		c.JSON(errors.GetStatusCode(err), models.MessageResponse{Message: err.Error()})
 	})
 }

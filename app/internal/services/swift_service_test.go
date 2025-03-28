@@ -29,7 +29,7 @@ func TestAddSwiftCode(t *testing.T) {
 
 	msg, err := service.AddSwiftCode(swiftCode)
 	assert.NoError(t, err, "Adding a SWIFT code should not return an error")
-	assert.Equal(t, "Headquarter SWIFT code added successfully", msg)
+	assert.Equal(t, "headquarter SWIFT code added successfully", msg)
 
 	var result models.SwiftCode
 	err = service.DB.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBBXXX"}).Decode(&result)
@@ -103,7 +103,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 
 	response, err := service.DeleteSwiftCode("XYZBANKXXX")
 	assert.NoError(t, err, "Deleting SWIFT code should not return an error")
-	assert.Equal(t, "Deleted hadquarter XYZBANKXXX and its branches", response, "Expected deletion message")
+	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response, "Expected deletion message")
 
 	err = service.DB.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANKXXX"}).Decode(&swiftCode)
 	assert.Error(t, err, "SWIFT code should be removed from the database")

@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"swift-app/internal/errors"
 	"swift-app/internal/models"
@@ -14,11 +13,11 @@ import (
 // Function ensures the ISO2 country code has exactly two uppercase letters.
 func ValidateCountryISO2(iso2 string) error {
 	if len(iso2) != 2 {
-		return fmt.Errorf("%w: country ISO2 must be 2 characters", errors.ErrBadRequest)
+		return errors.Wrap(errors.ErrBadRequest, "country ISO2 must be 2 characters")
 	}
 	for _, r := range iso2 {
 		if r < 'A' || r > 'Z' {
-			return fmt.Errorf("%w: country ISO2 must contain only letters", errors.ErrBadRequest)
+			return errors.Wrap(errors.ErrBadRequest, "country ISO2 must contain only letters")
 		}
 	}
 	return nil
@@ -27,7 +26,7 @@ func ValidateCountryISO2(iso2 string) error {
 // Function verifies if the provided ISO2 code exists in the given countries map.
 func ValidateCountryExistence(iso2 string, countries map[string]models.Country) error {
 	if _, ok := countries[iso2]; !ok {
-		return fmt.Errorf("%w: country ISO2 '%s' not found", errors.ErrBadRequest, iso2)
+		return errors.Wrap(errors.ErrBadRequest, "country ISO2 '%s' not found", iso2)
 	}
 	return nil
 }
@@ -40,7 +39,7 @@ func LoadAndValidateCountry(iso2 string) (map[string]models.Country, error) {
 
 	countries, err := LoadCountries()
 	if err != nil {
-		return nil, fmt.Errorf("%w: error loading country data", errors.ErrInternal)
+		return nil, errors.Wrap(errors.ErrInternal, "error loading country data")
 	}
 
 	if err := ValidateCountryExistence(iso2, countries); err != nil {
@@ -53,10 +52,10 @@ func LoadAndValidateCountry(iso2 string) (map[string]models.Country, error) {
 // Function validates the length of the provided SWIFT code.
 func ValidateSwiftCode(swiftCode string) error {
 	if len(swiftCode) == 0 {
-		return fmt.Errorf("%w: missing SWIFT code", errors.ErrBadRequest)
+		return errors.Wrap(errors.ErrBadRequest, "missing SWIFT code")
 	}
 	if len(swiftCode) < 8 || len(swiftCode) > 11 {
-		return fmt.Errorf("%w: SWIFT code must be between 8 and 11 characters", errors.ErrBadRequest)
+		return errors.Wrap(errors.ErrBadRequest, "SWIFT code must be between 8 and 11 characters")
 	}
 	return nil
 }
@@ -65,7 +64,7 @@ func ValidateSwiftCode(swiftCode string) error {
 func ValidateCountryNameMatch(iso2 string, inputName string, countries map[string]models.Country) error {
 	expected := countries[iso2].Name
 	if !strings.EqualFold(inputName, expected) {
-		return fmt.Errorf("%w: country name '%s' does not match ISO2 '%s'", errors.ErrBadRequest, inputName, iso2)
+		return errors.Wrap(errors.ErrBadRequest, "country name '%s' does not match ISO2 '%s'", inputName, iso2)
 	}
 	return nil
 }
@@ -82,11 +81,11 @@ func GetHeadquarterBySwiftCode(db *mongo.Collection, swiftCode string) (*models.
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			if strings.HasSuffix(swiftCode, "XXX") {
-				return nil, fmt.Errorf("%w: headquarter not found: %s", errors.ErrNotFound, swiftCode)
+				return nil, errors.Wrap(errors.ErrNotFound, "headquarter not found: %s", swiftCode)
 			}
-			return nil, fmt.Errorf("%w: can not do any actions with branch %s because its headquarter %s is missing", errors.ErrNotFound, swiftCode, headquarterCode)
+			return nil, errors.Wrap(errors.ErrNotFound, "cannot perform action with branch '%s' because its headquarter '%s' is missing", swiftCode, headquarterCode)
 		}
-		return nil, fmt.Errorf("%w: database error while searching for headquarter", errors.ErrInternal)
+		return nil, errors.Wrap(errors.ErrInternal, "database error while searching for headquarter")
 	}
 
 	return &headquarter, nil
@@ -107,10 +106,10 @@ func LoadAndValidateCountryWithName(iso2, inputName string) (map[string]models.C
 // Function checks whether SWIFT code suffix matches expected format for HQ or branch.
 func ValidateSwiftCodeSuffix(swiftCode string, isHeadquarter bool) error {
 	if isHeadquarter && !strings.HasSuffix(swiftCode, "XXX") {
-		return fmt.Errorf("%w: HQ swift code must end with 'XXX'", errors.ErrBadRequest)
+		return errors.Wrap(errors.ErrBadRequest, "HQ SWIFT code must end with 'XXX'")
 	}
 	if !isHeadquarter && strings.HasSuffix(swiftCode, "XXX") {
-		return fmt.Errorf("%w: branch swift code cannot end with 'XXX'", errors.ErrBadRequest)
+		return errors.Wrap(errors.ErrBadRequest, "branch SWIFT code cannot end with 'XXX'")
 	}
 	return nil
 }

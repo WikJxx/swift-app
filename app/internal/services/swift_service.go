@@ -51,7 +51,7 @@ func (s *SwiftCodeService) GetSwiftCodeDetails(swiftCode string) (*models.SwiftC
 		}
 	}
 
-	return nil, fmt.Errorf("%w: no branch found for SWIFT code %s", errors.ErrNotFound, swiftCode)
+	return nil, errors.Wrap(errors.ErrNotFound, "no branch found for SWIFT code %s", swiftCode)
 }
 
 // Function retrieves all SWIFT codes and branches associated with a specified country ISO2 code.
@@ -64,16 +64,16 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 
 	cursor, err := s.DB.Find(context.Background(), bson.M{utils.FieldCountryISO2: countryISO2})
 	if err != nil {
-		return nil, fmt.Errorf("%w: error retrieving SWIFT codes for country %s", errors.ErrInternal, countryISO2)
+		return nil, errors.Wrap(errors.ErrInternal, "error retrieving SWIFT codes for country %s", countryISO2)
 	}
 	defer cursor.Close(context.Background())
 
 	var swiftCodes []models.SwiftCode
 	if err = cursor.All(context.Background(), &swiftCodes); err != nil {
-		return nil, fmt.Errorf("%w: error decoding SWIFT codes for country %s", errors.ErrInternal, countryISO2)
+		return nil, errors.Wrap(errors.ErrInternal, "error decoding SWIFT codes for country %s", countryISO2)
 	}
 	if len(swiftCodes) == 0 {
-		return nil, fmt.Errorf("%w: no SWIFT codes found for country %s", errors.ErrNotFound, countryISO2)
+		return nil, errors.Wrap(errors.ErrNotFound, "no SWIFT codes found for country %s", countryISO2)
 	}
 
 	var countryName = swiftCodes[0].CountryName
@@ -138,7 +138,7 @@ func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, erro
 		utils.FieldAddress:       request.Address,
 		utils.FieldCountryISO2:   request.CountryISO2,
 		utils.FieldCountryName:   request.CountryName,
-		utils.FieldIsHeadquarter: request.IsHeadquarter,
+		utils.FieldIsHeadquarter: true,
 		utils.FieldBranches:      request.Branches,
 	}
 	if request.IsHeadquarter && request.Branches == nil {
@@ -147,12 +147,12 @@ func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, erro
 
 	if request.IsHeadquarter {
 		if err := s.DB.FindOne(context.Background(), bson.M{utils.FieldSwiftCode: request.SwiftCode}).Err(); err == nil {
-			return "", fmt.Errorf("%w: headquarter SWIFT code already exists", errors.ErrBadRequest)
+			return "", errors.Wrap(errors.ErrBadRequest, "headquarter SWIFT code already exists")
 		}
 		if _, err := s.DB.InsertOne(context.Background(), doc); err != nil {
-			return "", fmt.Errorf("%w: error inserting SWIFT code into the database", errors.ErrInternal)
+			return "", errors.Wrap(errors.ErrInternal, "error inserting SWIFT code into the database")
 		}
-		return "Headquarter SWIFT code added successfully", nil
+		return "headquarter SWIFT code added successfully", nil
 	}
 
 	headquarter, err := utils.GetHeadquarterBySwiftCode(s.DB, request.SwiftCode)
@@ -160,11 +160,11 @@ func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, erro
 		return "", err
 	}
 	if request.CountryISO2 != headquarter.CountryISO2 {
-		return "", fmt.Errorf("%w: branch SWIFT code countryISO does not match headquarter countryISO", errors.ErrBadRequest)
+		return "", errors.Wrap(errors.ErrBadRequest, "branch countryISO does not match headquarter countryISO")
 	}
 	for _, branch := range headquarter.Branches {
 		if branch.SwiftCode == request.SwiftCode {
-			return "", fmt.Errorf("%w: branch SWIFT code already exists", errors.ErrBadRequest)
+			return "", errors.Wrap(errors.ErrBadRequest, "branch SWIFT code already exists")
 		}
 	}
 
@@ -178,10 +178,10 @@ func (s *SwiftCodeService) AddSwiftCode(request *models.SwiftCode) (string, erro
 	if _, err := s.DB.UpdateOne(context.Background(),
 		bson.M{utils.FieldSwiftCode: headquarter.SwiftCode},
 		bson.M{"$push": bson.M{utils.FieldBranches: branch}}); err != nil {
-		return "", fmt.Errorf("%w: error updating headquarter with branch", errors.ErrInternal)
+		return "", errors.Wrap(errors.ErrInternal, "error updating headquarter with branch")
 	}
 
-	return "Branch SWIFT code added to headquarter successfully", nil
+	return "branch SWIFT code added to headquarter successfully", nil
 }
 
 // Function deletes an existing SWIFT code (headquarter and its branches, or single branch) from the database.
@@ -199,10 +199,10 @@ func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 		var headquarter models.SwiftCode
 		err := s.DB.FindOne(context.Background(), bson.M{utils.FieldSwiftCode: swiftCode, utils.FieldIsHeadquarter: true}).Decode(&headquarter)
 		if err == mongo.ErrNoDocuments {
-			return "", fmt.Errorf("%w: headquarter %s not found, cannot delete", errors.ErrNotFound, swiftCode)
+			return "", errors.Wrap(errors.ErrNotFound, "headquarter %s not found, cannot delete", swiftCode)
 		}
 		if err != nil {
-			return "", fmt.Errorf("%w: error while checking headquarter %s", errors.ErrInternal, swiftCode)
+			return "", errors.Wrap(errors.ErrInternal, "error while checking headquarter %s", swiftCode)
 		}
 
 		result, err := s.DB.DeleteMany(context.Background(), bson.M{
@@ -212,22 +212,22 @@ func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 			},
 		})
 		if err != nil {
-			return "", fmt.Errorf("%w: error deleting headquarter %s and its branches", errors.ErrInternal, swiftCode)
+			return "", errors.Wrap(errors.ErrInternal, "error deleting headquarter %s and its branches", swiftCode)
 		}
 		if result.DeletedCount == 0 {
-			return "", fmt.Errorf("%w: headquarter %s was not deleted", errors.ErrInternal, swiftCode)
+			return "", errors.Wrap(errors.ErrInternal, "headquarter %s was not deleted", swiftCode)
 		}
-		return fmt.Sprintf("Deleted hadquarter %s and its branches", swiftCode), nil
+		return fmt.Sprintf("deleted hadquarter %s and its branches", swiftCode), nil
 	}
 
 	headquarterCode := swiftCode[:8] + "XXX"
 	var headquarter models.SwiftCode
 	err := s.DB.FindOne(context.Background(), bson.M{utils.FieldSwiftCode: headquarterCode, utils.FieldIsHeadquarter: true}).Decode(&headquarter)
 	if err == mongo.ErrNoDocuments {
-		return "", fmt.Errorf("%w: branch %s not found and its headquarter %s does not exist", errors.ErrNotFound, swiftCode, headquarterCode)
+		return "", errors.Wrap(errors.ErrNotFound, "branch %s not found and its headquarter %s does not exist", swiftCode, headquarterCode)
 	}
 	if err != nil {
-		return "", fmt.Errorf("%w: error checking headquarter for branch %s", errors.ErrInternal, swiftCode)
+		return "", errors.Wrap(errors.ErrInternal, "error checking headquarter for branch %s", swiftCode)
 	}
 
 	update, err := s.DB.UpdateOne(
@@ -236,11 +236,10 @@ func (s *SwiftCodeService) DeleteSwiftCode(swiftCode string) (string, error) {
 		bson.M{"$pull": bson.M{utils.FieldBranches: bson.M{utils.FieldSwiftCode: swiftCode}}},
 	)
 	if err != nil {
-		return "", fmt.Errorf("%w: error deleting branch %s", errors.ErrInternal, swiftCode)
+		return "", errors.Wrap(errors.ErrInternal, "error deleting branch %s", swiftCode)
 	}
 	if update.ModifiedCount == 0 {
-		return "", fmt.Errorf("%w: branch %s not found under headquarter %s", errors.ErrNotFound, swiftCode, headquarterCode)
+		return "", errors.Wrap(errors.ErrNotFound, "branch %s not found under headquarter %s", swiftCode, headquarterCode)
 	}
-
-	return fmt.Sprintf("Branch %s deleted successfully", swiftCode), nil
+	return fmt.Sprintf("branch %s deleted successfully", swiftCode), nil
 }

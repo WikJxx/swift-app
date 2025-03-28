@@ -1,41 +1,43 @@
 package errors
 
-import "errors"
-
-var (
-	ErrBadRequest = errors.New("bad request")
-	ErrNotFound   = errors.New("not found")
-	ErrConflict   = errors.New("conflict")
-	ErrInternal   = errors.New("internal server error")
+import (
+	"fmt"
+	"net/http"
 )
 
-func IsBadRequest(err error) bool {
-	return errors.Is(err, ErrBadRequest)
+type AppError struct {
+	Message    string
+	StatusCode int
 }
 
-func IsNotFound(err error) bool {
-	return errors.Is(err, ErrNotFound)
+func (e *AppError) Error() string {
+	return e.Message
 }
 
-func IsConflict(err error) bool {
-	return errors.Is(err, ErrConflict)
-}
-
-func IsInternal(err error) bool {
-	return errors.Is(err, ErrInternal)
-}
-
-func MapToStatusCode(err error) int {
-	switch {
-	case IsBadRequest(err):
-		return 400
-	case IsNotFound(err):
-		return 404
-	case IsConflict(err):
-		return 409
-	case IsInternal(err):
-		return 500
-	default:
-		return 500
+func New(message string, statusCode int) *AppError {
+	return &AppError{
+		Message:    message,
+		StatusCode: statusCode,
 	}
+}
+
+var (
+	ErrBadRequest = New("bad request", http.StatusBadRequest)
+	ErrNotFound   = New("not found", http.StatusNotFound)
+	ErrConflict   = New("conflict", http.StatusConflict)
+	ErrInternal   = New("internal server error", http.StatusInternalServerError)
+)
+
+func Wrap(base *AppError, format string, args ...interface{}) *AppError {
+	return &AppError{
+		Message:    fmt.Sprintf(format, args...),
+		StatusCode: base.StatusCode,
+	}
+}
+
+func GetStatusCode(err error) int {
+	if appErr, ok := err.(*AppError); ok {
+		return appErr.StatusCode
+	}
+	return http.StatusInternalServerError
 }

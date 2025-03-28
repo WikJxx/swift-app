@@ -17,8 +17,7 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 
 	swift, err := swiftService.GetSwiftCodeDetails(swiftCode)
 	if err != nil {
-		status := errors.MapToStatusCode(err)
-		c.JSON(status, models.MessageResponse{Message: err.Error()})
+		c.JSON(errors.GetStatusCode(err), models.MessageResponse{Message: err.Error()})
 		return
 	}
 
@@ -44,8 +43,7 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 
 	swiftCodesResponse, err := swiftService.GetSwiftCodesByCountry(countryISO2)
 	if err != nil {
-		status := errors.MapToStatusCode(err)
-		c.JSON(status, models.MessageResponse{Message: err.Error()})
+		c.JSON(errors.GetStatusCode(err), models.MessageResponse{Message: err.Error()})
 		return
 	}
 
@@ -62,14 +60,15 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	var swiftCodeRequest models.SwiftCode
 	if err := c.ShouldBindJSON(&swiftCodeRequest); err != nil {
-		c.JSON(http.StatusBadRequest, models.MessageResponse{Message: "Invalid input data"})
+		c.JSON(errors.GetStatusCode(errors.ErrBadRequest), models.MessageResponse{
+			Message: "Invalid input data or JSON format",
+		})
 		return
 	}
 
 	message, err := swiftService.AddSwiftCode(&swiftCodeRequest)
 	if err != nil {
-		status := errors.MapToStatusCode(err)
-		c.JSON(status, models.MessageResponse{Message: err.Error()})
+		c.JSON(errors.GetStatusCode(err), models.MessageResponse{Message: err.Error()})
 		return
 	}
 
@@ -82,10 +81,10 @@ func DeleteSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 
 	message, err := swiftService.DeleteSwiftCode(swiftCode)
 	if err != nil {
-		status := errors.MapToStatusCode(err)
-		c.JSON(status, models.MessageResponse{Message: err.Error()})
+		c.JSON(errors.GetStatusCode(err), models.MessageResponse{Message: err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, models.MessageResponse{Message: message})
+
 }

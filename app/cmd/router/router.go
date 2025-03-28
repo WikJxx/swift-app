@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 	v1 "swift-app/api/v1"
+	"swift-app/internal/models"
 	"swift-app/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,6 @@ func SetupRoutes(r *gin.Engine, swiftService *services.SwiftCodeService) {
 	}
 
 	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Endpoint not found. Please check the URL and try again."})
+		c.JSON(http.StatusNotFound, models.MessageResponse{Message: "Endpoint not found. Please check the URL and try again."})
 	})
 }

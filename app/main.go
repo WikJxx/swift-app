@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"swift-app/cmd/server"
 	"swift-app/database"
-	initialization "swift-app/initialization"
+	"swift-app/initialization"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -46,15 +46,22 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	hqAdded, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := initialization.ImportData(csvPath)
+	summary, err := initialization.ImportData(csvPath)
 	if err != nil {
 		log.Fatalf("Failed to import data: %v", err)
 	}
 
-	log.Printf("\nData import complete. \nHeadquarters added: %d\nNumber of skipped headquarters due to beeing duplicates with records in database: %d\n\n", hqAdded, hqSkipped)
-	log.Printf("\nBranches added: %d\nNumber of skipped branches due to beeing duplicates with records in database: %d\nNumber of branches skipped due to missing headquarters: %d\nNumber of all skipped branches: %d\n", branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped)
+	log.Printf(`
+Data import complete.
+Headquarters added: %d
+Skipped HQs (duplicates): %d
 
-	log.Println("Data imported successfully.")
+Branches added: %d
+Duplicate branches: %d
+Branches with missing HQ: %d
+All skipped branches: %d
+`, summary.HQAdded, summary.HQSkipped, summary.BranchesAdded, summary.BranchesDuplicate, summary.BranchesMissingHQ, summary.BranchesSkipped)
+
 	handleShutdown()
 	fmt.Println("Starting application...")
 	server.StartServer()

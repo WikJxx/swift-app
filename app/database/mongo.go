@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"swift-app/internal/models"
+	"swift-app/internal/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -35,11 +36,17 @@ func InitMongoDB(uri string, dbName string, collectionName string) error {
 
 	collection = client.Database(dbName).Collection(collectionName)
 
-	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"swiftCode": 1},
-		Options: options.Index().SetUnique(true),
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{utils.FieldSwiftCode: 1},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.M{utils.FieldCountryISO2: 1},
+			Options: options.Index(),
+		},
 	}
-	_, err = collection.Indexes().CreateOne(context.Background(), indexModel)
+	_, err = collection.Indexes().CreateMany(context.Background(), indexModels)
 	if err != nil {
 		return fmt.Errorf("failed to create unique index: %v", err)
 	}
@@ -54,107 +61,6 @@ func IsCollectionEmpty() (bool, error) {
 		return false, fmt.Errorf("failed to count documents: %v", err)
 	}
 	return count == 0, nil
-}
-
-func SaveSwiftCodes(swiftCodes []models.SwiftCode) error {
-	hqMap := make(map[string]*models.SwiftCode)
-	branches := make([]models.SwiftCode, 0)
-	branchesSkippedMissingHQ := []string{}
-	branchesDuplicates := 0
-	hqAdded := 0
-	hqAlreadyExists := 0
-	branchesAdded := 0
-
-	for _, code := range swiftCodes {
-		if code.IsHeadquarter {
-			hqMap[code.SwiftCode] = &code
-		} else {
-			branches = append(branches, code)
-		}
-	}
-
-	for _, hq := range hqMap {
-		filter := bson.M{"swiftCode": hq.SwiftCode}
-		count, err := collection.CountDocuments(context.Background(), filter)
-		if err != nil {
-			return fmt.Errorf("error checking HQ existence: %v", err)
-		}
-
-		if count == 0 {
-			_, err := collection.InsertOne(context.Background(), bson.M{
-				"swiftCode":     hq.SwiftCode,
-				"bankName":      hq.BankName,
-				"address":       hq.Address,
-				"countryISO2":   hq.CountryISO2,
-				"countryName":   hq.CountryName,
-				"isHeadquarter": true,
-				"branches":      hq.Branches,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to insert HQ: %v", err)
-			}
-			hqAdded++
-		} else {
-			hqAlreadyExists++
-		}
-	}
-
-	for _, branch := range branches {
-		hqCode := branch.SwiftCode[:8] + "XXX"
-		filter := bson.M{"swiftCode": hqCode, "isHeadquarter": true}
-
-		var hq models.SwiftCode
-		err := collection.FindOne(context.Background(), filter).Decode(&hq)
-		if err != nil {
-			branchesSkippedMissingHQ = append(branchesSkippedMissingHQ, branch.SwiftCode)
-			continue
-		}
-
-		branchExists := false
-		for _, existing := range hq.Branches {
-			if existing.SwiftCode == branch.SwiftCode {
-				branchExists = true
-				break
-			}
-		}
-		if branchExists {
-			branchesDuplicates++
-			continue
-		}
-
-		update := bson.M{"$push": bson.M{"branches": bson.M{
-			"swiftCode":     branch.SwiftCode,
-			"bankName":      branch.BankName,
-			"address":       branch.Address,
-			"countryISO2":   branch.CountryISO2,
-			"isHeadquarter": false,
-		}}}
-
-		result, err := collection.UpdateOne(context.Background(), filter, update)
-		if err != nil {
-			return fmt.Errorf("failed to add branch: %v", err)
-		}
-		if result.ModifiedCount > 0 {
-			branchesAdded++
-		} else {
-			branchesDuplicates++
-		}
-	}
-
-	fmt.Printf("Data import complete. HQs added: %d, already existing HQs: %d\n", hqAdded, hqAlreadyExists)
-	fmt.Printf("Branches added: %d\n", branchesAdded)
-	fmt.Printf("Branches skipped due to duplicates: %d\n", branchesDuplicates)
-
-	if len(branchesSkippedMissingHQ) > 0 {
-		fmt.Printf("Branches not added due to missing HQs (%d): %s\n", len(branchesSkippedMissingHQ), joinBranchCodes(branchesSkippedMissingHQ))
-	}
-
-	return nil
-}
-
-// function formats branch codes into a single string (helper function).
-func joinBranchCodes(codes []string) string {
-	return fmt.Sprintf("%s", codes)
 }
 
 func CloseMongoDB() error {
@@ -179,7 +85,7 @@ func SaveHeadquarters(hqList []models.SwiftCode) (int, int, error) {
 	hqSkipped := 0
 
 	for _, hq := range hqList {
-		filter := bson.M{"swiftCode": hq.SwiftCode}
+		filter := bson.M{utils.FieldSwiftCode: hq.SwiftCode}
 		count, err := collection.CountDocuments(context.Background(), filter)
 		if err != nil {
 			return hqAdded, hqSkipped, fmt.Errorf("error checking HQ existence: %v", err)
@@ -187,13 +93,13 @@ func SaveHeadquarters(hqList []models.SwiftCode) (int, int, error) {
 
 		if count == 0 {
 			_, err := collection.InsertOne(context.Background(), bson.M{
-				"swiftCode":     hq.SwiftCode,
-				"bankName":      hq.BankName,
-				"address":       hq.Address,
-				"countryISO2":   hq.CountryISO2,
-				"countryName":   hq.CountryName,
-				"isHeadquarter": true,
-				"branches":      []interface{}{},
+				utils.FieldSwiftCode:     hq.SwiftCode,
+				utils.FieldBankName:      hq.BankName,
+				utils.FieldAddress:       hq.Address,
+				utils.FieldCountryISO2:   hq.CountryISO2,
+				utils.FieldCountryName:   hq.CountryName,
+				utils.FieldIsHeadquarter: true,
+				utils.FieldBranches:      []interface{}{},
 			})
 			if err != nil {
 				return hqAdded, hqSkipped, fmt.Errorf("failed to insert HQ: %v", err)
@@ -215,7 +121,7 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 
 	for _, branch := range branches {
 		hqCode := branch.SwiftCode[:8] + "XXX"
-		filter := bson.M{"swiftCode": hqCode, "isHeadquarter": true}
+		filter := bson.M{utils.FieldSwiftCode: hqCode, utils.FieldIsHeadquarter: true}
 
 		var hq bson.M
 		err := collection.FindOne(context.Background(), filter).Decode(&hq)
@@ -225,7 +131,7 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 			continue
 		}
 
-		branchesField, ok := hq["branches"].(primitive.A)
+		branchesField, ok := hq[utils.FieldBranches].(primitive.A)
 		if !ok {
 			branchesField = primitive.A{}
 		}
@@ -233,7 +139,7 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 		duplicate := false
 		for _, existing := range branchesField {
 			if bmap, ok := existing.(bson.M); ok {
-				if bmap["swiftCode"] == branch.SwiftCode {
+				if bmap[utils.FieldSwiftCode] == branch.SwiftCode {
 					duplicate = true
 					break
 				}
@@ -245,12 +151,12 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 			continue
 		}
 
-		update := bson.M{"$push": bson.M{"branches": bson.M{
-			"swiftCode":     branch.SwiftCode,
-			"bankName":      branch.BankName,
-			"address":       branch.Address,
-			"countryISO2":   branch.CountryISO2,
-			"isHeadquarter": false,
+		update := bson.M{"$push": bson.M{utils.FieldBranches: bson.M{
+			utils.FieldSwiftCode:     branch.SwiftCode,
+			utils.FieldBankName:      branch.BankName,
+			utils.FieldAddress:       branch.Address,
+			utils.FieldCountryISO2:   branch.CountryISO2,
+			utils.FieldIsHeadquarter: false,
 		}}}
 
 		_, err = collection.UpdateOne(context.Background(), filter, update)

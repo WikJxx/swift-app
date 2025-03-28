@@ -6,13 +6,14 @@ import (
 	"swift-app/internal/errors"
 	"swift-app/internal/models"
 	"swift-app/internal/services"
+	"swift-app/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Retrieves details of a specific SWIFT code, including branches if available.
 func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
-	swiftCode := strings.ToUpper(c.Param("swift-code"))
+	swiftCode := strings.ToUpper(c.Param(utils.ParamSwiftCode))
 
 	swift, err := swiftService.GetSwiftCodeDetails(swiftCode)
 	if err != nil {
@@ -39,7 +40,7 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 
 // Retrieves all SWIFT codes for a given country identified by ISO2 code.
 func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeService) {
-	countryISO2 := strings.ToUpper(c.Param("countryISO2code"))
+	countryISO2 := strings.ToUpper(c.Param(utils.ParamCountryISO2))
 
 	swiftCodesResponse, err := swiftService.GetSwiftCodesByCountry(countryISO2)
 	if err != nil {
@@ -77,7 +78,7 @@ func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 
 // Deletes an existing SWIFT code from the system.
 func DeleteSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
-	swiftCode := strings.ToUpper(c.Param("swift-code"))
+	swiftCode := strings.ToUpper(c.Param(utils.ParamSwiftCode))
 
 	message, err := swiftService.DeleteSwiftCode(swiftCode)
 	if err != nil {

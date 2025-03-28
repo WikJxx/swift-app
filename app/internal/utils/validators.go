@@ -52,6 +52,9 @@ func LoadAndValidateCountry(iso2 string) (map[string]models.Country, error) {
 
 // Function validates the length of the provided SWIFT code.
 func ValidateSwiftCode(swiftCode string) error {
+	if len(swiftCode) == 0 {
+		return fmt.Errorf("%w: missing SWIFT code", errors.ErrBadRequest)
+	}
 	if len(swiftCode) < 8 || len(swiftCode) > 11 {
 		return fmt.Errorf("%w: SWIFT code must be between 8 and 11 characters", errors.ErrBadRequest)
 	}
@@ -72,8 +75,8 @@ func GetHeadquarterBySwiftCode(db *mongo.Collection, swiftCode string) (*models.
 	headquarterCode := swiftCode[:8] + "XXX"
 	var headquarter models.SwiftCode
 	err := db.FindOne(context.Background(), bson.M{
-		"swiftCode":     headquarterCode,
-		"isHeadquarter": true,
+		FieldSwiftCode:     headquarterCode,
+		FieldIsHeadquarter: true,
 	}).Decode(&headquarter)
 
 	if err != nil {

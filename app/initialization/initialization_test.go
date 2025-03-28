@@ -35,15 +35,15 @@ func TestImportData_WithTestContainer(t *testing.T) {
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	testCSV := filepath.Join(filepath.Dir(currentFilePath), "test_data", "swift_test.csv")
 
-	hqAdded, hqSkipped, branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := ImportData(testCSV)
+	summary, err := ImportData(testCSV)
 	assert.NoError(t, err)
 
-	assert.GreaterOrEqual(t, hqAdded, 1)
-	assert.Equal(t, 0, hqSkipped)
-	assert.GreaterOrEqual(t, branchesAdded, 0)
-	assert.Equal(t, 0, branchesDuplicate)
-	assert.Equal(t, 1, branchesMissingHQ)
-	assert.Equal(t, 1, branchesSkipped)
+	assert.GreaterOrEqual(t, summary.HQAdded, 1)
+	assert.Equal(t, 0, summary.HQSkipped)
+	assert.GreaterOrEqual(t, summary.BranchesAdded, 0)
+	assert.Equal(t, 0, summary.BranchesDuplicate)
+	assert.Equal(t, 1, summary.BranchesMissingHQ)
+	assert.Equal(t, 1, summary.BranchesSkipped)
 
 	t.Cleanup(func() {
 		collection := database.GetCollection()

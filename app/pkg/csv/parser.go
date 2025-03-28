@@ -88,7 +88,7 @@ func processRecords(records [][]string, fieldIndexes map[string]int, countries m
 	for _, record := range records {
 		swiftCode, countryISO2, bankName, address, countryName := extractRecordData(record, fieldIndexes)
 
-		if err := validateRecord(swiftCode, countryISO2, bankName, address, countryName, countries); err != nil {
+		if err := validateRecord(swiftCode, countryISO2, countryName, countries); err != nil {
 			fmt.Printf("Warning: %s - %v\n", swiftCode, err)
 			continue
 		}
@@ -141,7 +141,7 @@ func extractRecordData(record []string, fieldIndexes map[string]int) (string, st
 }
 
 // Validates the extracted data from a record against SWIFT code rules and the provided country map.
-func validateRecord(swiftCode, countryISO2, bankName, address, countryName string, countries map[string]models.Country) error {
+func validateRecord(swiftCode, countryISO2, countryName string, countries map[string]models.Country) error {
 	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
 		return fmt.Errorf("invalid SWIFT code: %v", err)
 	}

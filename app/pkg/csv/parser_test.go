@@ -203,7 +203,6 @@ func TestLoadSwiftCodesFromFile(t *testing.T) {
 }
 
 func TestLoadSwiftCodes_HeaderAliases(t *testing.T) {
-	// Przygotuj tymczasowy plik countries.csv wymagany przez LoadCountries
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	projectRoot := filepath.Join(filepath.Dir(currentFilePath), "../..")
 	resourceDir := filepath.Join(projectRoot, "internal", "resources")

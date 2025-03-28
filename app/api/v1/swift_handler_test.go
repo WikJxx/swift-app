@@ -29,7 +29,7 @@ func TestGetSwiftCode(t *testing.T) {
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "AAAABBBXXX",
+		"swiftCode":     "AAAABBB1XXX",
 		"bankName":      "Test Bank",
 		"address":       "123 Test St",
 		"countryISO2":   "US",
@@ -40,7 +40,7 @@ func TestGetSwiftCode(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "swift-code", Value: "aaaabbbxxx"}}
+	c.Params = []gin.Param{{Key: "swift-code", Value: "aaaabbb1xxx"}}
 
 	GetSwiftCode(c, service)
 
@@ -49,7 +49,7 @@ func TestGetSwiftCode(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, "Test Bank", response.BankName)
-	assert.Equal(t, "AAAABBBXXX", response.SwiftCode)
+	assert.Equal(t, "AAAABBB1XXX", response.SwiftCode)
 }
 
 func TestGetSwiftCode_NotFound(t *testing.T) {
@@ -76,14 +76,14 @@ func TestGetSwiftCodesByCountry(t *testing.T) {
 
 	_, err := testutils.Collection.InsertMany(context.Background(), []interface{}{
 		bson.M{
-			"swiftCode":     "AAAABBBXXX",
+			"swiftCode":     "AAAABBB1XXX",
 			"bankName":      "Bank A",
 			"countryISO2":   "US",
 			"countryName":   "United States",
 			"isHeadquarter": true,
 		},
 		bson.M{
-			"swiftCode":     "ZZZZPPPXXX",
+			"swiftCode":     "ZZZZPPP1XXX",
 			"bankName":      "Bank B",
 			"countryISO2":   "US",
 			"countryName":   "United States",
@@ -112,7 +112,7 @@ func TestAddSwiftCode(t *testing.T) {
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := models.SwiftCode{
-		SwiftCode:     "AAAABBBXXX",
+		SwiftCode:     "AAAABBB1XXX",
 		BankName:      "Test Bank",
 		CountryISO2:   "US",
 		CountryName:   "United States",
@@ -141,7 +141,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 	service := services.NewSwiftCodeService(testutils.Collection)
 
 	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "XYZBANKXXX",
+		"swiftCode":     "XYZBANK1XXX",
 		"bankName":      "XYZ Bank",
 		"countryISO2":   "UK",
 		"countryName":   "United Kingdom",
@@ -151,7 +151,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Params = []gin.Param{{Key: "swift-code", Value: "XYZBANKXXX"}}
+	c.Params = []gin.Param{{Key: "swift-code", Value: "XYZBANK1XXX"}}
 
 	DeleteSwiftCode(c, service)
 
@@ -160,5 +160,5 @@ func TestDeleteSwiftCode(t *testing.T) {
 	var response models.MessageResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response.Message)
+	assert.Equal(t, "deleted hadquarter XYZBANK1XXX and its branches", response.Message)
 }

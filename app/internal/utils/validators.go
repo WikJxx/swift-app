@@ -54,8 +54,8 @@ func ValidateSwiftCode(swiftCode string) error {
 	if len(swiftCode) == 0 {
 		return errors.Wrap(errors.ErrBadRequest, "missing SWIFT code")
 	}
-	if len(swiftCode) < 8 || len(swiftCode) > 11 {
-		return errors.Wrap(errors.ErrBadRequest, "SWIFT code must be between 8 and 11 characters")
+	if len(swiftCode) != 8 && len(swiftCode) != 11 {
+		return errors.Wrap(errors.ErrBadRequest, "SWIFT code must be 8 or 11 characters")
 	}
 	return nil
 }

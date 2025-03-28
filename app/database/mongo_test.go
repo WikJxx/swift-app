@@ -61,7 +61,7 @@ func TestSaveHeadquarters(t *testing.T) {
 
 	hqs := []models.SwiftCode{
 		{
-			SwiftCode:     "HQBANKXXX",
+			SwiftCode:     "HQBANK11XXX",
 			BankName:      "HQ Bank",
 			Address:       "HQ Street",
 			CountryISO2:   "US",

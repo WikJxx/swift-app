@@ -34,7 +34,7 @@ func TestSaveAndRetrieveSwiftCode(t *testing.T) {
 	service := services.NewSwiftCodeService(utils.Collection)
 
 	swiftCode := &models.SwiftCode{
-		SwiftCode:     "AAAABBBXXX",
+		SwiftCode:     "AAAABBB1XXX",
 		BankName:      "Test Bank",
 		CountryISO2:   "US",
 		CountryName:   "United States",
@@ -44,7 +44,7 @@ func TestSaveAndRetrieveSwiftCode(t *testing.T) {
 	_, err := service.AddSwiftCode(swiftCode)
 	assert.NoError(t, err, "Failed to add SWIFT code")
 
-	result, err := service.GetSwiftCodeDetails("AAAABBBXXX")
+	result, err := service.GetSwiftCodeDetails("AAAABBB1XXX")
 	assert.NoError(t, err, "Failed to retrieve SWIFT code")
 	assert.Equal(t, "Test Bank", result.BankName, "Expected bank name 'Test Bank'")
 }
@@ -55,7 +55,7 @@ func TestAddSwiftCodeEndpoint(t *testing.T) {
 	r := setupRouter()
 
 	swiftCode := models.SwiftCode{
-		SwiftCode:     "AAAABBBXXX",
+		SwiftCode:     "AAAABBB1XXX",
 		BankName:      "Test Bank",
 		CountryISO2:   "US",
 		CountryName:   "United States",
@@ -77,7 +77,7 @@ func TestAddSwiftCodeEndpoint(t *testing.T) {
 	assert.Equal(t, "headquarter SWIFT code added successfully", response["message"], "Expected success message")
 
 	var result models.SwiftCode
-	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBBXXX"}).Decode(&result)
+	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBB1XXX"}).Decode(&result)
 	assert.NoError(t, err, "Failed to retrieve SWIFT code from database")
 	assert.Equal(t, "Test Bank", result.BankName, "Expected bank name 'Test Bank'")
 }
@@ -85,7 +85,7 @@ func TestGetSwiftCodeEndpoint(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "AAAABBBXXX",
+		"swiftCode":     "AAAABBB1XXX",
 		"bankName":      "Test Bank",
 		"address":       "123 Test St",
 		"countryISO2":   "US",
@@ -97,7 +97,7 @@ func TestGetSwiftCodeEndpoint(t *testing.T) {
 	r := setupRouter()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/v1/swift-codes/AAAABBBXXX", nil)
+	req, _ := http.NewRequest("GET", "/v1/swift-codes/AAAABBB1XXX", nil)
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
 
@@ -110,7 +110,7 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "XYZBANKXXX",
+		"swiftCode":     "XYZBANK1XXX",
 		"bankName":      "XYZ Bank",
 		"countryISO2":   "UK",
 		"countryName":   "United Kingdom",
@@ -121,7 +121,7 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	r := setupRouter()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("DELETE", "/v1/swift-codes/XYZBANKXXX", nil)
+	req, _ := http.NewRequest("DELETE", "/v1/swift-codes/XYZBANK1XXX", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code, "Expected status code 200")
@@ -129,9 +129,9 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	var response map[string]string
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err, "Failed to unmarshal response")
-	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response["message"], "Expected deletion message")
+	assert.Equal(t, "deleted hadquarter XYZBANK1XXX and its branches", response["message"], "Expected deletion message")
 
-	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANKXXX"}).Decode(&bson.M{})
+	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANK1XXX"}).Decode(&bson.M{})
 	assert.Error(t, err, "SWIFT code should be removed from the database")
 }
 func TestGetSwiftCodesByCountryEndpoint(t *testing.T) {
@@ -139,14 +139,14 @@ func TestGetSwiftCodesByCountryEndpoint(t *testing.T) {
 
 	_, err := utils.Collection.InsertMany(context.Background(), []interface{}{
 		bson.M{
-			"swiftCode":     "AAAABBBXXX",
+			"swiftCode":     "AAAABBB1XXX",
 			"bankName":      "Bank A",
 			"countryISO2":   "US",
 			"countryName":   "United States",
 			"isHeadquarter": true,
 		},
 		bson.M{
-			"swiftCode":     "ZZZZPPPXXX",
+			"swiftCode":     "ZZZZPPP1XXX",
 			"bankName":      "Bank B",
 			"countryISO2":   "US",
 			"countryName":   "United States",

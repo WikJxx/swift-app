@@ -12,10 +12,10 @@ import (
 // This file contains unit tests for the LoadSwiftCodes function,
 func TestLoadSwiftCodes(t *testing.T) {
 	data := `SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME
-AAAABBBXXX,US,First Bank,123 First St,United States
-AAAABBBXXX,US,First Bank,123 First St,United States
-AAAABBB123,US,Second Bank,456 Second St,United States
-AAAABBB123,US,Second Bank,456 Second St,United States
+AAAABBB1XXX,US,First Bank,123 First St,United States
+AAAABBB1XXX,US,First Bank,123 First St,United States
+AAAABBB1123,US,Second Bank,456 Second St,United States
+AAAABBB1123,US,Second Bank,456 Second St,United States
 `
 
 	tmpFile, err := os.CreateTemp("", "test_swift_codes_*.csv")
@@ -58,8 +58,8 @@ AAAABBB123,US,Second Bank,456 Second St,United States
 		}
 	}
 
-	if _, exists := swiftCodeSet["AAAABBBXXX"]; !exists {
-		t.Errorf("SwiftCode AAAABBBXXX not found")
+	if _, exists := swiftCodeSet["AAAABBB1XXX"]; !exists {
+		t.Errorf("SwiftCode AAAABBB1XXX not found")
 	}
 }
 
@@ -217,11 +217,11 @@ func TestLoadSwiftCodes_HeaderAliases(t *testing.T) {
 	})
 
 	testCases := map[string]string{
-		"SWIFT CODE":  "SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
-		"SWIFTCODE":   "SWIFTCODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
-		"SWIFT_CODE":  "SWIFT_CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
-		"SWIFT CODES": "SWIFT CODES,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
-		"SWIFT C0DE":  "SWIFT C0DE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBBXXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT CODE":  "SWIFT CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBB1XXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFTCODE":   "SWIFTCODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBB1XXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT_CODE":  "SWIFT_CODE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBB1XXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT CODES": "SWIFT CODES,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBB1XXX,US,First Bank,123 First St,UNITED STATES",
+		"SWIFT C0DE":  "SWIFT C0DE,COUNTRY ISO2 CODE,NAME,ADDRESS,COUNTRY NAME\nAAAABBB1XXX,US,First Bank,123 First St,UNITED STATES",
 	}
 
 	for label, content := range testCases {
@@ -237,7 +237,7 @@ func TestLoadSwiftCodes_HeaderAliases(t *testing.T) {
 			codes, err := LoadSwiftCodes(tmpFile.Name())
 			assert.NoError(t, err)
 			assert.Equal(t, 1, len(codes))
-			assert.Equal(t, "AAAABBBXXX", codes[0].SwiftCode)
+			assert.Equal(t, "AAAABBB1XXX", codes[0].SwiftCode)
 		})
 	}
 }

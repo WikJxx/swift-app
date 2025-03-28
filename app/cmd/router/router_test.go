@@ -32,7 +32,7 @@ func TestGetSwiftCode(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "AAAABBBXXX",
+		"swiftCode":     "AAAABBB1XXX",
 		"bankName":      "Test Bank",
 		"address":       "123 Test St",
 		"countryISO2":   "US",
@@ -43,7 +43,7 @@ func TestGetSwiftCode(t *testing.T) {
 
 	r := setupRouter()
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/v1/swift-codes/AAAABBBXXX", nil)
+	req, _ := http.NewRequest("GET", "/v1/swift-codes/AAAABBB1XXX", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -76,7 +76,7 @@ func TestAddSwiftCode(t *testing.T) {
 	r := setupRouter()
 
 	swiftCode := models.SwiftCode{
-		SwiftCode:     "AAAABBBXXX",
+		SwiftCode:     "AAAABBB1XXX",
 		BankName:      "Test Bank",
 		CountryISO2:   "US",
 		CountryName:   "United States",
@@ -102,7 +102,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
-		"swiftCode":     "XYZBANKXXX",
+		"swiftCode":     "XYZBANK1XXX",
 		"bankName":      "XYZ Bank",
 		"countryISO2":   "UK",
 		"countryName":   "United Kingdom",
@@ -112,7 +112,7 @@ func TestDeleteSwiftCode(t *testing.T) {
 
 	r := setupRouter()
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("DELETE", "/v1/swift-codes/XYZBANKXXX", nil)
+	req, _ := http.NewRequest("DELETE", "/v1/swift-codes/XYZBANK1XXX", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -120,5 +120,5 @@ func TestDeleteSwiftCode(t *testing.T) {
 	var response models.MessageResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "deleted hadquarter XYZBANKXXX and its branches", response.Message)
+	assert.Equal(t, "deleted hadquarter XYZBANK1XXX and its branches", response.Message)
 }

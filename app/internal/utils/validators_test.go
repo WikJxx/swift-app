@@ -18,7 +18,7 @@ func TestValidateCountryISO2(t *testing.T) {
 }
 
 func TestValidateSwiftCode(t *testing.T) {
-	assert.NoError(t, ValidateSwiftCode("ABCDEFGH"))
+	assert.Error(t, ValidateSwiftCode("ABCDEFGHG"))
 	assert.NoError(t, ValidateSwiftCode("ABCDEFGHXXX"))
 	assert.Error(t, ValidateSwiftCode("ABCDEFG"))
 	assert.Error(t, ValidateSwiftCode("ABCDEFGHIJKL"))

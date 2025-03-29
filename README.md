@@ -192,7 +192,7 @@ Swagger UI: http://localhost:8080/swagger/index.html
 #### 1. Clone the repository:
 ```bash 
 https://github.com/WikJxx/swift-app.git
-cd swift-api/app
+cd swift-app/app
 ```
 #### 2. .env file
 

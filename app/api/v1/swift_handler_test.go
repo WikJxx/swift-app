@@ -1,3 +1,6 @@
+// swift_handler_test.go contains unit tests for the SWIFT code handlers defined in the v1 API layer.
+// The tests ensure correct behavior of each handler, covering response validation, error handling,
+// and interaction with the underlying service layer.
 package v1
 
 import (
@@ -17,8 +20,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// Unit tests for individual handlers of SWIFT code API endpoints.
-// Tests validate handler behavior, response correctness, and proper error handling.
 func clearCollection() {
 	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 }

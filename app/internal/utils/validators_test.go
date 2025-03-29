@@ -1,3 +1,4 @@
+// validators_test.go contains unit tests for validation functions related to SWIFT codes and country data.
 package utils
 
 import (
@@ -7,8 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-// Package utils contains unit tests for validation functions related to SWIFT codes and country data.
 
 func TestValidateCountryISO2(t *testing.T) {
 	assert.NoError(t, ValidateCountryISO2("US"))

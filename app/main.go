@@ -1,3 +1,5 @@
+// Package main is the entry point of the Swift App API.
+// It initializes the environment, database, imports data from CSV, and starts the server.
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// main initializes environment variables, connects to the database, imports SWIFT data, and starts the HTTP server.
 // @title Swift App API
 // @version 1.0
 // @description This is a Swift Code management API.
@@ -54,6 +57,7 @@ All skipped branches: %d
 	server.StartServer()
 }
 
+// handleShutdown listens for termination signals and gracefully closes the MongoDB connection.
 func handleShutdown() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)

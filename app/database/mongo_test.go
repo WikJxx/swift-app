@@ -1,5 +1,6 @@
-// Package database provides functionality for MongoDB initialization,
-// checking collection state, and saving headquarters and branch records.
+// database_test.go contains integration tests for MongoDB-related functionality in the database package.
+// It verifies correct database initialization, collection state checks, and the saving of headquarters and branch records.
+
 package database
 
 import (

@@ -9,7 +9,7 @@ import (
 	"swift-app/internal/utils"
 )
 
-// Loads and parses a CSV file containing SWIFT code data, validates each record, and returns a list of unique, validated SWIFT codes.
+// LoadSwiftCodes loads and parses a CSV file containing SWIFT code data, validates each record, and returns a list of unique, validated SWIFT codes.
 func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -24,8 +24,8 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 		return nil, err
 	}
 
-	header := sanitizeHeader(records[0])
-	fieldIndexes := getFieldIndexes(header)
+	header := SanitizeHeader(records[0])
+	fieldIndexes := GetFieldIndexes(header)
 
 	if fieldIndexes["SWIFT CODE"] == -1 {
 		return nil, fmt.Errorf("missing required field: SWIFT CODE")
@@ -36,20 +36,20 @@ func LoadSwiftCodes(filePath string) ([]models.SwiftCode, error) {
 		return nil, fmt.Errorf("error loading country data: %v", err)
 	}
 
-	return processRecords(records[1:], fieldIndexes, countries)
+	return ProcessRecords(records[1:], fieldIndexes, countries)
 }
 
-// Converts all header fields to uppercase and trims whitespace to ensure consistent field matching.
-func sanitizeHeader(header []string) []string {
+// SanitizeHeader converts all header fields to uppercase and trims whitespace to ensure consistent field matching.
+func SanitizeHeader(header []string) []string {
 	for i, h := range header {
 		header[i] = strings.ToUpper(strings.TrimSpace(h))
 	}
 	return header
 }
 
-//Maps column names (including supported aliases) to their respective indexes in the CSV header row.
+// GetFieldIndexes maps column names (including supported aliases) to their respective indexes in the CSV header row.
 
-func getFieldIndexes(header []string) map[string]int {
+func GetFieldIndexes(header []string) map[string]int {
 	fieldIndexes := map[string]int{
 		"SWIFT CODE":        -1,
 		"COUNTRY ISO2 CODE": -1,
@@ -80,15 +80,15 @@ func getFieldIndexes(header []string) map[string]int {
 	return fieldIndexes
 }
 
-// Processes all rows from the CSV file, validates them, and constructs SwiftCode structs while skipping duplicates or invalid entries.
-func processRecords(records [][]string, fieldIndexes map[string]int, countries map[string]models.Country) ([]models.SwiftCode, error) {
+// ProcessRecords processes all rows from the CSV file, validates them, and constructs SwiftCode structs while skipping duplicates or invalid entries.
+func ProcessRecords(records [][]string, fieldIndexes map[string]int, countries map[string]models.Country) ([]models.SwiftCode, error) {
 	swiftCodes := []models.SwiftCode{}
 	uniqueCodes := make(map[string]bool)
 
 	for _, record := range records {
-		swiftCode, countryISO2, bankName, address, countryName := extractRecordData(record, fieldIndexes)
+		swiftCode, countryISO2, bankName, address, countryName := ExtractRecordData(record, fieldIndexes)
 
-		if err := validateRecord(swiftCode, countryISO2, countryName, countries); err != nil {
+		if err := ValidateRecord(swiftCode, countryISO2, countryName, countries); err != nil {
 			fmt.Printf("Warning: %s - %v\n", swiftCode, err)
 			continue
 		}
@@ -129,8 +129,8 @@ func processRecords(records [][]string, fieldIndexes map[string]int, countries m
 	return swiftCodes, nil
 }
 
-// Extracts and normalizes (uppercase/trim) the values for SWIFT code, ISO2, bank name, address, and country name from a CSV row.
-func extractRecordData(record []string, fieldIndexes map[string]int) (string, string, string, string, string) {
+// ExtractRecordData extracts and normalizes (uppercase/trim) the values for SWIFT code, ISO2, bank name, address, and country name from a CSV row.
+func ExtractRecordData(record []string, fieldIndexes map[string]int) (string, string, string, string, string) {
 	swiftCode := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["SWIFT CODE"]]))
 	countryISO2 := strings.TrimSpace(strings.ToUpper(record[fieldIndexes["COUNTRY ISO2 CODE"]]))
 	bankName := strings.ToUpper(record[fieldIndexes["NAME"]])
@@ -140,8 +140,8 @@ func extractRecordData(record []string, fieldIndexes map[string]int) (string, st
 	return swiftCode, countryISO2, bankName, address, countryName
 }
 
-// Validates the extracted data from a record against SWIFT code rules and the provided country map.
-func validateRecord(swiftCode, countryISO2, countryName string, countries map[string]models.Country) error {
+// ValidateRecord validates the extracted data from a record against SWIFT code rules and the provided country map.
+func ValidateRecord(swiftCode, countryISO2, countryName string, countries map[string]models.Country) error {
 	if err := utils.ValidateSwiftCode(swiftCode); err != nil {
 		return fmt.Errorf("invalid SWIFT code: %v", err)
 	}

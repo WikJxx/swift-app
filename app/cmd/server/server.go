@@ -1,3 +1,5 @@
+// server.go initializes and starts the HTTP server for the Swift App.
+// It sets up the routing, attaches the SWIFT code service, and exposes the Swagger UI endpoint.
 package server
 
 import (

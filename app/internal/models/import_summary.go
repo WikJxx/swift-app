@@ -1,5 +1,6 @@
 package models
 
+// ImportSummary holds statistics about the import process.
 type ImportSummary struct {
 	HQAdded           int
 	HQSkipped         int

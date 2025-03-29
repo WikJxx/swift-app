@@ -1,3 +1,5 @@
+// errors.go defines a custom AppError type for consistent error handling across the application.
+// It includes predefined HTTP errors, wrapping support, and a helper for extracting status codes.
 package errors
 
 import (

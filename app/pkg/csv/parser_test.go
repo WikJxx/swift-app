@@ -1,3 +1,4 @@
+// parser_test.go contains unit tests for the LoadSwiftCodes function,
 package csv
 
 import (

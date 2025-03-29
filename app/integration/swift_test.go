@@ -1,3 +1,6 @@
+// Package integration contains integration tests that verify full flow from HTTP endpoints
+// through router and handlers down to MongoDB persistence. These tests validate proper end-to-end
+// behavior including request handling, data validation, and interaction with the database.
 package integration
 
 import (

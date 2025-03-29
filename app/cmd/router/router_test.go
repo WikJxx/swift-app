@@ -1,3 +1,6 @@
+// router_test.go contains integration tests for the SWIFT code API endpoints defined in the router package.
+// The tests verify correct routing, HTTP status codes, response bodies, and database interactions,
+// simulating real HTTP requests against the Gin engine with registered routes.
 package router
 
 import (
@@ -24,9 +27,6 @@ func setupRouter() *gin.Engine {
 
 	return r
 }
-
-// Package router contains integration tests for API endpoints related to SWIFT codes.
-// Tests verify correct HTTP responses, database interactions, and error handling.
 
 func TestGetSwiftCode(t *testing.T) {
 	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})

@@ -11,7 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetSwiftCode godoc
+// GetSwiftCode handles GET requests to fetch a SWIFT code (headquarter or branch) by its identifier.
+//
+// It returns the full details of a headquarter or branch.
+// If the code refers to a headquarter, its branches are also included.
+//
 // @Summary Get SWIFT code
 // @Description Returns a SWIFT code by its identifier (headquarter)
 // @Tags SWIFT Codes
@@ -53,7 +57,10 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	})
 }
 
-// GetSwiftCodesByCountry godoc
+// GetSwiftCodesByCountry handles GET requests to retrieve all SWIFT codes for a given country.
+//
+// The country is identified using its ISO2 code. Both headquarters and branches are returned.
+//
 // @Summary Get SWIFT codes by country
 // @Description Returns a list of SWIFT codes for a given country ISO2 code
 // @Tags SWIFT Codes
@@ -81,7 +88,10 @@ func GetSwiftCodesByCountry(c *gin.Context, swiftService *services.SwiftCodeServ
 	c.JSON(http.StatusOK, response)
 }
 
-// AddSwiftCode godoc
+// AddSwiftCode handles POST requests to add a new SWIFT code to the system.
+//
+// It can add both headquarters and branches. Input is validated from JSON.
+//
 // @Summary Add a SWIFT code
 // @Description Adds a new SWIFT code (headquarter or branch)
 // @Tags SWIFT Codes
@@ -109,7 +119,10 @@ func AddSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	c.JSON(http.StatusOK, models.MessageResponse{Message: message})
 }
 
-// DeleteSwiftCode godoc
+// DeleteSwiftCode handles DELETE requests to remove a SWIFT code from the database.
+//
+// If the provided code is a headquarter, all its branches are also removed.
+//
 // @Summary Delete SWIFT code
 // @Description Deletes a headquarter SWIFT code and its branches or a single branch
 // @Tags SWIFT Codes

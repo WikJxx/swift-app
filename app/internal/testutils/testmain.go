@@ -1,4 +1,6 @@
-package utils
+// Package testutils sets up a MongoDB test container and initializes a MongoDB client and collection
+// for use in integration tests.
+package testutils
 
 import (
 	"context"
@@ -8,9 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-// Package testutils sets up a MongoDB test container and initializes a MongoDB client and collection
-// for use in integration tests.
 
 var (
 	MongoContainer *mongodb.MongoDBContainer

@@ -1,5 +1,9 @@
+// Package models defines data models used throughout the application,
+// including SWIFT code structures for headquarters and branches.
 package models
 
+// SwiftCode represents a SWIFT headquarter record, including address, bank details,
+// and any associated branch information.
 type SwiftCode struct {
 	Address       string        `json:"address"`
 	BankName      string        `json:"bankName"`
@@ -10,6 +14,7 @@ type SwiftCode struct {
 	Branches      []SwiftBranch `json:"branches"`
 }
 
+// SwiftBranch represents a branch of a SWIFT headquarter.
 type SwiftBranch struct {
 	Address       string `json:"address"`
 	BankName      string `json:"bankName"`

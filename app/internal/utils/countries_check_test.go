@@ -1,3 +1,4 @@
+// countries_check_test.go contains unit tests for country data loading and validation from CSV file.
 package utils
 
 import (
@@ -6,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Package contains unit tests for country data loading and validation from CSV file.
 func TestLoadCountries(t *testing.T) {
 	countries, err := LoadCountries()
 	assert.NoError(t, err, "LoadCountries should not return an error")

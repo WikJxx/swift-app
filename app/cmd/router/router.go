@@ -1,3 +1,6 @@
+// router.go defines and registers API routes for the SWIFT code service.
+// It connects the HTTP endpoints to their corresponding handler functions,
+// sets up the versioned API group, and configures a fallback for unknown routes.
 package router
 
 import (
@@ -9,13 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Get SWIFT code details
-// @Description Returns details of a SWIFT code by its identifier
-// @Tags Swift Codes
-// @Param swift-code path string true "SWIFT Code"
-// @Produce json
-// @Success 200 {object} models.SwiftCode
-// @Failure 404 {object} models.MessageResponse
 func SetupRoutes(r *gin.Engine, swiftService *services.SwiftCodeService) {
 	api := r.Group("/v1/swift-codes")
 	{

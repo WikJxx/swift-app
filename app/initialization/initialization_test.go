@@ -1,3 +1,6 @@
+// initialization_test.go contains integration tests for the initialization package.
+// These tests validate the correct setup of the MongoDB connection and data import
+// from a sample CSV file using a temporary test container instance.
 package initialization
 
 import (

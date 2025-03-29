@@ -1,3 +1,6 @@
+// mongo.go provides functionality for connecting to MongoDB, managing the collection,
+// and saving headquarters and branch SWIFT code records. It includes initialization,
+// shutdown, document insertion, and helper methods used throughout the application.
 package database
 
 import (
@@ -17,7 +20,8 @@ var client *mongo.Client
 var collection *mongo.Collection
 var isConnected bool
 
-// Function initializes the MongoDB connection and creates a unique index on swiftCode.
+// InitMongoDB establishes a connection to the MongoDB instance,
+// initializes the target collection, and creates indexes.
 func InitMongoDB(uri string, dbName string, collectionName string) error {
 	if isConnected {
 		return nil

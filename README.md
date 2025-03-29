@@ -21,9 +21,9 @@ This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Co
 1. [Features](#features)
 2. [Project Structure](#project-structure)
 3. [Getting Started](#getting-started)
-   - [Environment Setup](#environment-setup)
-   - [Run with Docker (Recommended)](#run-with-docker-recommended)
-   - [Run Locally](#run-locally)
+   - [Prerequisites](#prerequisites)
+   - [Docker Deployment (Recommended))](#option-1-docker-deployment-recommended)
+   - [Running Locally](#option-2-running-locally)
 4. [API Endpoints](#api-endpoints)
 5. [Swagger UI & Documentation](#swagger-ui--documentation)
 6. [Testing](#testing)
@@ -139,12 +139,12 @@ swift-api/
 ### Prerequisites
 
 #### For Docker Deployment:
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (required for `docker-compose`)
+- [Docker](https://www.docker.com/products/docker-desktop/) (required for `docker-compose`)
 - `.env` file with correct values (see below)
 
 #### For Local Development:
 - [Go](https://go.dev/dl/) 1.21 or higher
-- [MongoDB](https://www.mongodb.com/try/download/community) installed locally and running (`mongod`)
+- [MongoDB](https://www.mongodb.com/docs/manual/administration/install-community/) installed locally and running (`mongod`)
 - [Git](https://git-scm.com/)
 
 > If you're on Windows and plan to run tests using **Testcontainers**, Docker must support **Linux containers** (not rootless).
@@ -211,21 +211,8 @@ PORT=8080
 ```
 
 #### 3.  Start MongoDB (if not already running)
-You need to have MongoDB running either locally or via Docker.  
-You can also use MongoDB Compass or any other MongoDB client to explore the database.
-
-You can also run mongo in docker container.
-```bash
-docker-compose up -d mongo
-```
-or 
-```bash
-docker run -d --name mongo -p 27017:27017 -e MONGO_INITDB_DATABASE=swiftDB mongo:8
-```
-If using docker remember to change  MONGO_URI path in .env, for example: 
-```bash
-mongodb://mongo:27017
-```
+You need to have MongoDB running locally.  
+[Mongo Installer](https://www.mongodb.com/docs/manual/administration/install-community/) 
 
 #### 4. Install dependencies:
 ```bash

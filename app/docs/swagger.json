@@ -1,0 +1,228 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a Swift Code management API.",
+        "title": "Swift App API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/v1/swift-codes/": {
+            "post": {
+                "description": "Adds a new SWIFT code (headquarter or branch)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SWIFT Codes"
+                ],
+                "summary": "Add a SWIFT code",
+                "parameters": [
+                    {
+                        "description": "SWIFT code object",
+                        "name": "swiftCode",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SwiftCode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/swift-codes/country/{countryISO2code}": {
+            "get": {
+                "description": "Returns a list of SWIFT codes for a given country ISO2 code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SWIFT Codes"
+                ],
+                "summary": "Get SWIFT codes by country",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Country ISO2 code",
+                        "name": "countryISO2code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SwiftCode"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/swift-codes/{swift-code}": {
+            "get": {
+                "description": "Returns a SWIFT code by its identifier (headquarter)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SWIFT Codes"
+                ],
+                "summary": "Get SWIFT code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SWIFT code",
+                        "name": "swift-code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SwiftCode"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a headquarter SWIFT code and its branches or a single branch",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SWIFT Codes"
+                ],
+                "summary": "Delete SWIFT code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SWIFT code",
+                        "name": "swift-code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SwiftBranch": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "bankName": {
+                    "type": "string"
+                },
+                "countryISO2": {
+                    "type": "string"
+                },
+                "countryName": {
+                    "type": "string"
+                },
+                "isHeadquarter": {
+                    "type": "boolean"
+                },
+                "swiftCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SwiftCode": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "bankName": {
+                    "type": "string"
+                },
+                "branches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SwiftBranch"
+                    }
+                },
+                "countryISO2": {
+                    "type": "string"
+                },
+                "countryName": {
+                    "type": "string"
+                },
+                "isHeadquarter": {
+                    "type": "boolean"
+                },
+                "swiftCode": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

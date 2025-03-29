@@ -9,12 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes registers SWIFT code API endpoints with their corresponding handlers:
-// - GET "/:swift-code": Fetch details of a specific SWIFT code.
-// - GET "/country/:countryISO2code": List all SWIFT codes for a given country.
-// - POST "/": Add a new SWIFT code.
-// - DELETE "/:swift-code": Delete an existing SWIFT code.
-
+// @Summary Get SWIFT code details
+// @Description Returns details of a SWIFT code by its identifier
+// @Tags Swift Codes
+// @Param swift-code path string true "SWIFT Code"
+// @Produce json
+// @Success 200 {object} models.SwiftCode
+// @Failure 404 {object} models.MessageResponse
 func SetupRoutes(r *gin.Engine, swiftService *services.SwiftCodeService) {
 	api := r.Group("/v1/swift-codes")
 	{

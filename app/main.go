@@ -7,29 +7,16 @@ import (
 	"os/signal"
 	"swift-app/cmd/server"
 	"swift-app/database"
+	_ "swift-app/docs"
 	"swift-app/initialization"
 	"syscall"
 
 	"github.com/joho/godotenv"
 )
 
-func handleShutdown() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-sigs
-		fmt.Println("\nShutdown requested, closing database connection...")
-		err := database.CloseMongoDB()
-		if err != nil {
-			log.Println("Error closing database:", err)
-		} else {
-			fmt.Println("Database connection closed.")
-		}
-		os.Exit(0)
-	}()
-}
-
+// @title Swift App API
+// @version 1.0
+// @description This is a Swift Code management API.
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -65,4 +52,21 @@ All skipped branches: %d
 	handleShutdown()
 	fmt.Println("Starting application...")
 	server.StartServer()
+}
+
+func handleShutdown() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		fmt.Println("\nShutdown requested, closing database connection...")
+		err := database.CloseMongoDB()
+		if err != nil {
+			log.Println("Error closing database:", err)
+		} else {
+			fmt.Println("Database connection closed.")
+		}
+		os.Exit(0)
+	}()
 }

@@ -144,6 +144,7 @@ CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
     ```
 #### 2. Run the application:
 ```bash
+cd swift-app/app
 go run main.go
 ```
 The APP will be available at http://localhost:8080.
@@ -239,6 +240,7 @@ The APP will be available at http://localhost:8080.
 ## Testing
 To run the tests,make sure you have docker running and use the following command:
 ```bash
+cd swift-app/app
 go test ./...
 ```
 The project includes:

@@ -1,0 +1,149 @@
+definitions:
+  models.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  models.SwiftBranch:
+    properties:
+      address:
+        type: string
+      bankName:
+        type: string
+      countryISO2:
+        type: string
+      countryName:
+        type: string
+      isHeadquarter:
+        type: boolean
+      swiftCode:
+        type: string
+    type: object
+  models.SwiftCode:
+    properties:
+      address:
+        type: string
+      bankName:
+        type: string
+      branches:
+        items:
+          $ref: '#/definitions/models.SwiftBranch'
+        type: array
+      countryISO2:
+        type: string
+      countryName:
+        type: string
+      isHeadquarter:
+        type: boolean
+      swiftCode:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This is a Swift Code management API.
+  title: Swift App API
+  version: "1.0"
+paths:
+  /v1/swift-codes/:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new SWIFT code (headquarter or branch)
+      parameters:
+      - description: SWIFT code object
+        in: body
+        name: swiftCode
+        required: true
+        schema:
+          $ref: '#/definitions/models.SwiftCode'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+      summary: Add a SWIFT code
+      tags:
+      - SWIFT Codes
+  /v1/swift-codes/{swift-code}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a headquarter SWIFT code and its branches or a single branch
+      parameters:
+      - description: SWIFT code
+        in: path
+        name: swift-code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+      summary: Delete SWIFT code
+      tags:
+      - SWIFT Codes
+    get:
+      consumes:
+      - application/json
+      description: Returns a SWIFT code by its identifier (headquarter)
+      parameters:
+      - description: SWIFT code
+        in: path
+        name: swift-code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SwiftCode'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+      summary: Get SWIFT code
+      tags:
+      - SWIFT Codes
+  /v1/swift-codes/country/{countryISO2code}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of SWIFT codes for a given country ISO2 code
+      parameters:
+      - description: Country ISO2 code
+        in: path
+        name: countryISO2code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SwiftCode'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+      summary: Get SWIFT codes by country
+      tags:
+      - SWIFT Codes
+swagger: "2.0"

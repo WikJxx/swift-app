@@ -4,16 +4,17 @@ type SwiftCode struct {
 	Address       string        `json:"address"`
 	BankName      string        `json:"bankName"`
 	CountryISO2   string        `json:"countryISO2"`
-	CountryName   string        `json:"countryName,omitempty"`
+	CountryName   string        `json:"countryName"`
 	IsHeadquarter bool          `json:"isHeadquarter"`
 	SwiftCode     string        `json:"swiftCode"`
-	Branches      []SwiftBranch `json:"branches,omitempty"`
+	Branches      []SwiftBranch `json:"branches"`
 }
 
 type SwiftBranch struct {
 	Address       string `json:"address"`
 	BankName      string `json:"bankName"`
 	CountryISO2   string `json:"countryISO2"`
+	CountryName   string `json:"countryName,omitempty"`
 	IsHeadquarter bool   `json:"isHeadquarter"`
 	SwiftCode     string `json:"swiftCode"`
 }

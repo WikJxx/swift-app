@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Retrieves details of a specific SWIFT code, including branches if available.
 func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 	swiftCode := strings.ToUpper(c.Param(utils.ParamSwiftCode))
 
@@ -21,20 +20,29 @@ func GetSwiftCode(c *gin.Context, swiftService *services.SwiftCodeService) {
 		return
 	}
 
-	response := models.SwiftCode{
+	if swift.IsHeadquarter {
+		// Zwracamy cały HQ z branchami
+		c.JSON(http.StatusOK, models.SwiftCode{
+			Address:       swift.Address,
+			BankName:      swift.BankName,
+			CountryISO2:   swift.CountryISO2,
+			CountryName:   swift.CountryName,
+			IsHeadquarter: true,
+			SwiftCode:     swift.SwiftCode,
+			Branches:      swift.Branches,
+		})
+		return
+	}
+
+	// Zwracamy tylko branch bez pola "branches"
+	c.JSON(http.StatusOK, models.SwiftBranch{
 		Address:       swift.Address,
 		BankName:      swift.BankName,
 		CountryISO2:   swift.CountryISO2,
 		CountryName:   swift.CountryName,
-		IsHeadquarter: swift.IsHeadquarter,
+		IsHeadquarter: false,
 		SwiftCode:     swift.SwiftCode,
-	}
-
-	if swift.IsHeadquarter {
-		response.Branches = swift.Branches
-	}
-
-	c.JSON(http.StatusOK, response)
+	})
 }
 
 // Retrieves all SWIFT codes for a given country identified by ISO2 code.

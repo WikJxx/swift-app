@@ -77,13 +77,13 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 	}
 
 	var countryName = swiftCodes[0].CountryName
-	var allSwiftCodes []models.SwiftCode
-	var allBranchCodes []models.SwiftCode
+	var allSwiftCodes []models.SwiftBranch
+	var allBranchCodes []models.SwiftBranch
 	swiftCodeSet := make(map[string]bool)
 
 	for _, swiftCode := range swiftCodes {
 		if swiftCode.IsHeadquarter && !swiftCodeSet[swiftCode.SwiftCode] {
-			allSwiftCodes = append(allSwiftCodes, models.SwiftCode{
+			allSwiftCodes = append(allSwiftCodes, models.SwiftBranch{
 				Address:       swiftCode.Address,
 				BankName:      swiftCode.BankName,
 				CountryISO2:   swiftCode.CountryISO2,
@@ -95,7 +95,7 @@ func (s *SwiftCodeService) GetSwiftCodesByCountry(countryISO2 string) (*models.C
 
 		for _, branch := range swiftCode.Branches {
 			if !swiftCodeSet[branch.SwiftCode] {
-				allBranchCodes = append(allBranchCodes, models.SwiftCode{
+				allBranchCodes = append(allBranchCodes, models.SwiftBranch{
 					Address:       branch.Address,
 					BankName:      branch.BankName,
 					CountryISO2:   branch.CountryISO2,

@@ -319,7 +319,7 @@ Swagger UI: http://localhost:8080/swagger/index.html
 
 This project uses [Swaggo](https://github.com/swaggo/swag) to generate interactive API documentation.
 
-### Setup
+### Swagger Setup
 
 No manual installation is required — all necessary dependencies are already included in `go.mod`.
 
@@ -335,13 +335,17 @@ The interface provides a complete list of all available API endpoints, expected 
 ### GoDoc-style Documentation
 
 To browse Go documentation locally:
+1. Install godoc if you don't have it:
+```bash
+go install golang.org/x/tools/cmd/godoc@latest
+```
 
-1. Run the local Go documentation server:
+2. Run the local Go documentation server:
 
 ```bash
 go doc -http=:6060
 ```
-2. Open your browser and go to:
+3. Open your browser and go to:
 ```bash
 http://localhost:6060/pkg/
 ```

@@ -211,13 +211,16 @@ PORT=8080
 ```
 
 #### 3.  Start MongoDB (if not already running)
-```bash
-mongod
-```
+You need to have MongoDB running either locally or via Docker.  
+You can also use MongoDB Compass or any other MongoDB client to explore the database.
 
 You can also run mongo in docker container.
 ```bash
 docker-compose up -d mongo
+```
+or 
+```bash
+docker run -d --name mongo -p 27017:27017 -e MONGO_INITDB_DATABASE=swiftDB mongo:8
 ```
 If using docker remember to change  MONGO_URI path in .env, for example: 
 ```bash

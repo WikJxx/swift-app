@@ -339,11 +339,12 @@ To browse Go documentation locally:
 ```bash
 go install golang.org/x/tools/cmd/godoc@latest
 ```
+Make sure your GOPATH is in your path.
 
 2. Run the local Go documentation server:
 
 ```bash
-go doc -http=:6060
+godoc -http=:6060
 ```
 3. Open your browser and go to:
 ```bash

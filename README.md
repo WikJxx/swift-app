@@ -21,14 +21,13 @@ This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Co
 1. [Features](#features)
 2. [Project Structure](#project-structure)
 3. [Getting Started](#getting-started)
-   - [Prerequisites](#prerequisites)
-   - [Installation](#installation)
-   - [Running the Application](#running-the-application)
+   - [Environment Setup](#environment-setup)
+   - [Run with Docker (Recommended)](#run-with-docker-recommended)
+   - [Run Locally](#run-locally)
 4. [API Endpoints](#api-endpoints)
-5. [Testing](#testing)
-6. [Docker Deployment](#docker-deployment)
+5. [Swagger UI & Documentation](#swagger-ui--documentation)
+6. [Testing](#testing)
 7. [Environment Variables](#environment-variables)
-
 ---
 
 ## Features
@@ -45,6 +44,10 @@ This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Co
   - Provides endpoints for retrieving, adding, and deleting SWIFT codes.
   - Supports querying SWIFT codes by country.
 
+- **Documentation**
+  - Auto-generated Swagger UI (`/swagger/index.html`).
+  - Developer-friendly GoDoc documentation for internal packages.
+
 - **Containerization**:
   - Dockerized for easy deployment and scalability.
   - Includes a `docker-compose.yml` file for running the application and MongoDB together.
@@ -57,47 +60,75 @@ This project is a Go-based REST API designed to manage SWIFT (Bank Identifier Co
 ## Project Structure
 ```bash
 swift-api/
-│── cmd/               # Application entry points
-│   ├── server/        # HTTP server initialization
-│   │   ├── server.go  # Gin server setup
-│   ├── router/        # API routing
-│   │   ├── router.go  # API route definitions
-│   │   ├── router_test.go  # API route definitions tests
-│── internal/          # Business logic
-│   ├── models/        # Data models
-│   │   ├── swift.go   # SWIFT code structure
-│   ├── services/      # Business logic implementation
-│   │   ├── swift_service.go  # SWIFT code operations
-│   ├── data/          # Storage
-│   │   ├── countries.csv   # Data connectiong coutry names with iso2 codes
-│   ├── testutils/      
-│   │   ├── testmain.go # Helper for tests
-│   ├── utils/        
-│   │   ├── countries_check.go   # Functionality to check coutry names and iso2 codes
-│── pkg/               # Utilities and helpers
-│   ├── csv/           # CSV parsing
-│   │   ├── parser.go  # CSV parsing logic
-│   │   ├── parser_test.go  # CSV parsing tests
-│   ├── test_data/     # CSV files
-│   │   ├── ...csv          # CSV file for parser
-│── database/          # Database connection
-│   ├── mongo.go       # MongoDB initialization
-│   ├── mongo_test.go  # MongoDB initialization test
-│── api/               # API handlers
-│   ├── v1/            # API versioning
-│   │   ├── swift_handler.go  # SWIFT code handlers
-│   │   ├── swift_handler_test.go  # SWIFT code handlers tests
-│── integration/       # Integration tests
-│   ├── integration.go # Integration test setup
-│── initialization/    # Initialization storage
-│   ├── initialization.go # Initialization of database connection
-│── Dockerfile         # Dockerfile for containerization
-│── docker-compose.yml # Docker Compose setup
-│── main.go            # Application entry point
-│── go.mod             # Go module dependencies
-│── go.sum             # Go dependency checksums
-│── .env               # Environment variables
-│── README.md          # Project documentation
+│
+├── app/
+│   │
+│   ├── cmd/                      # Application entry points
+│   │   ├── server/               # HTTP server initialization
+│   │   │   ├── server.go         # Gin server setup
+│   │   ├── router/               # API routing
+│   │   │   ├── router.go         # API route definitions
+│   │   │   ├── router_test.go    # Integration tests for routing layer
+│   │
+│   ├── internal/                 # Business logic
+│   │   ├── errors/               # Custom application errors with HTTP status mapping
+│   │   │   ├── errors.go
+│   │   ├── models/               # Data models
+│   │   │   ├── country_swift_code.go  # Response model: SWIFT codes grouped by country
+│   │   │   ├── country.go             # Model for country ISO2 and name
+│   │   │   ├── import_summary.go      # Model summarizing import statistics
+│   │   │   ├── response.go            # Generic message response model
+│   │   │   ├── swift.go               # SWIFT code and branch model
+│   │   ├── services/              # Business logic implementation
+│   │   │   ├── swift_service.go        # SWIFT code operations (add, get, delete)
+│   │   │   ├── swift_service_test.go  # Unit tests for service layer
+│   │   ├── resources/            # Static resources (CSV, data)
+│   │   │   ├── countries.csv         # Country name ↔ ISO2 mapping file
+│   │   ├── testutils/            # Shared test setup and MongoDB helpers
+│   │   │   ├── testmain.go           # Mongo container & collection bootstrap for tests
+│   │   ├── utils/                # Utility helpers
+│   │   │   ├── countries_check.go     # ISO2/country name matching and lookup
+│   │   │   ├── constans.go           # Constants used across the application
+│   │   │   ├── countries_check_test.go # Tests for country validation
+│   │   │   ├── validators.go         # Validation logic for SWIFT and country fields
+│   │   │   ├── validators_test.go    # Unit tests for validation functions
+│
+│   ├── pkg/                     # General-purpose packages
+│   │   ├── csv/                 # CSV parsing logic
+│   │   │   ├── parser.go            # SWIFT code CSV parser
+│   │   │   ├── parser_test.go       # Tests for CSV parsing
+│   │   ├── data/                # Sample CSV files for parser
+│   │   │   ├── ...csv
+│
+│   ├── database/                # MongoDB connection & setup
+│   │   ├── mongo.go                 # Database init, index creation, data saving
+│   │   ├── mongo_test.go           # MongoDB-related unit tests
+│
+│   ├── api/                     # HTTP handlers for API
+│   │   ├── v1/                  # API versioning (v1)
+│   │   │   ├── swift_handler.go       # Endpoint logic for SWIFT codes
+│   │   │   ├── swift_handler_test.go # Unit tests for handler logic
+│
+│   ├── integration/             # High-level integration tests (end-to-end)
+│   │   ├── swift_test.go            # Integration tests combining API + DB
+│
+│   ├── initialization/          # CSV import and DB connection bootstrap
+│   │   ├── initialization.go        # Load data & connect DB from .env
+│   │   ├── initialization_test.go   # Unit tests for initialization logic
+│   │   ├── data/                    # Embedded CSVs for test/import
+│   │   │   ├── ...csv
+│
+│   ├── docs/                    # Swagger documentation files (auto-generated)
+│   │   ├── ...                   # swagger.json, swagger.yaml, etc.
+│
+│   ├── Dockerfile               # Container definition for API app
+│   ├── docker-compose.yml       # Docker Compose setup for API + Mongo
+│   ├── main.go                  # Application entry point
+│   ├── go.mod                   # Go module definitions
+│   ├── go.sum                   # Dependency checksums
+│   ├── .env                     # Environment variables (used by app)
+│   └── README.md                # Project documentation
+
 
 ```
 
@@ -106,48 +137,102 @@ swift-api/
 ## Getting Started
 
 ### Prerequisites
-- Go 1.24.1 or higher (or Docker for containerized deployment)
 
-- MongoDB (or Docker for containerized deployment)
+#### For Docker Deployment:
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (required for `docker-compose`)
+- `.env` file with correct values (see below)
 
-- Docker (for containerized deployment and tests)
+#### For Local Development:
+- [Go](https://go.dev/dl/) 1.21 or higher
+- [MongoDB](https://www.mongodb.com/try/download/community) installed locally and running (`mongod`)
+- [Git](https://git-scm.com/)
 
-### Installation
-#### 1. Clone the repository:
-```bash 
-https://github.com/WikJxx/swift-app.git
-cd swift-api/app
-```
-#### 2. Install dependencies:
+> If you're on Windows and plan to run tests using **Testcontainers**, Docker must support **Linux containers** (not rootless).
+
+---
+
+### Option 1: Docker Deployment (Recommended)
+
+This is the fastest and simplest way to get started — no need to install Go or MongoDB locally.
+
+#### 1. Clone the Repository
 ```bash
-go mod tidy
+git clone https://github.com/WikJxx/swift-app.git
+cd swift-app/app
 ```
-### Running the Application
-If you run it locally make sure you have correct variables in .env file:
+#### 2. .env file
 
+Make sure you have the .env file in the main folder (/app). 
+
+If you don't, you can create it
+
+Example:
 ```bash
 MONGO_URI=mongodb://mongo:27017
 MONGO_DB=swiftDB
 MONGO_COLLECTION=swiftCodes
 CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
-
 ```
 
-#### 1. Start MongoDB:
-- If using Docker (recomended):
-    ```bash
-    docker-compose up -d mongo
-    ```
-- If running locally (Make sure you have mongo added to path):
-    ```bash
-    mongod
-    ```
-#### 2. Run the application:
+#### 3. Start the App with Docker Compose
+
 ```bash
-cd swift-app/app
+docker compose up
+```
+
+The app will be available at:
+http://localhost:8080
+Swagger UI: http://localhost:8080/swagger/index.html
+
+---
+
+### Option 2: Running locally
+#### 1. Clone the repository:
+```bash 
+https://github.com/WikJxx/swift-app.git
+cd swift-api/app
+```
+#### 2. .env file
+
+Make sure you have the .env file in the main folder (/app). 
+
+If you don't, you can create it
+
+Example:
+```bash
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=swiftDB
+MONGO_COLLECTION=swiftCodes
+CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
+```
+
+#### 3.  Start MongoDB (if not already running)
+```bash
+mongod
+```
+
+You can also run mongo in docker container.
+```bash
+docker-compose up -d mongo
+```
+If using docker remember to change  MONGO_URI path in .env, for example: 
+```bash
+mongodb://mongo:27017
+```
+
+#### 4. Install dependencies:
+```bash
+go mod tidy
+```
+
+#### 5. Run the application
+```bash
 go run main.go
 ```
-The APP will be available at http://localhost:8080.
+The app will be available at:
+http://localhost:8080
+Swagger UI: http://localhost:8080/swagger/index.html
+
 
 ---
 
@@ -236,27 +321,96 @@ The APP will be available at http://localhost:8080.
     ```
     
 ---
+## Swagger UI & Documentation
 
-## Testing
-To run the tests,make sure you have docker running and use the following command:
+This project uses [Swaggo](https://github.com/swaggo/swag) to generate interactive API documentation.
+
+### Setup
+
+No manual installation is required — all necessary dependencies are already included in `go.mod`.
+
+> **Note:** Swagger docs are automatically generated using Swaggo and served via `github.com/swaggo/gin-swagger`.
+
+### Accessing Swagger UI
+
+Once the app is running (default on port `8080`), you can access the Swagger UI at: http://localhost:8080/swagger/index.html
+
+
+The interface provides a complete list of all available API endpoints, expected request/response formats, and example usages.
+
+### GoDoc-style Documentation
+
+To browse Go documentation locally:
+
+1. Run the local Go documentation server:
+
 ```bash
-cd swift-app/app
-go test ./...
+go doc -http=:6060
 ```
-The project includes:
+2. Open your browser and go to:
+```bash
+http://localhost:6060/pkg/
+```
+You can now explore all your Go packages (e.g., internal/services, internal/models, etc.) using a classic GoDoc-style UI.
 
-- Unit Tests: For CSV parsing, database operations, and service logic.
+> **Note:** GoDoc server runs on http://localhost:6060 by default.
 
-- Integration Tests: For API endpoints and database interactions.
+To view the documentation of the services package via terminal:
+```bash
+go doc swift-app/internal/services
+```
+Or interactively via browser:
+```bash
+http://localhost:6060/pkg/swift-app/internal/services/
+```
 
 ---
 
-## Docker Deployment
-### 1. Build and start the containers:
+## Testing
+
+The project includes comprehensive **unit** and **integration tests** for all key components: parsers, services, API endpoints, and database logic.
+
+---
+
+### Requirements
+
+To run the test suite, **Docker must be running** on your machine. This is required because some tests use [Testcontainers](https://github.com/testcontainers/testcontainers-go) to spin up a real MongoDB instance in a container.
+
+---
+
+### Run All Tests
+
+Make sure Docker is running, then execute:
+
 ```bash
-docker compose up 
+cd swift-app/app
+go mod tidy 
+go test ./...
 ```
-### 2. The API will be available at http://localhost:8080. 
+This will automatically:
+
+- Start a MongoDB container
+
+- Connect to it via testcontainers-go
+
+- Run all unit and integration tests
+
+- Tear down the container afterwards
+
+### Test Coverage
+
+The project includes a comprehensive suite of both unit and integration tests to ensure correctness, data consistency, and API behavior. 
+
+
+| Module/Location          | Description                                                              |
+|--------------------------|--------------------------------------------------------------------------|
+| `pkg/csv`                | Validates CSV parsing and SWIFT data extraction                          |
+| `internal/utils`         | Ensures correctness of validators (e.g., ISO2 format, SWIFT format)      |
+| `internal/services`      | Verifies business logic and MongoDB operations (insert, find, delete)    |
+| `database/`              | Tests low-level MongoDB logic and collection indexing                    |
+| `cmd/router`             | Covers API routing and HTTP response handling                            |
+| `integration/`           | Full end-to-end HTTP tests of the API, including data storage & retrieval|
+
 
 ---
 ## Environment Variables
@@ -267,3 +421,5 @@ docker compose up
 | `MONGO_COLLECTION`  | MongoDB collection name              | `swiftCodes`                          |
 | `CSV_PATH`          | Path to the CSV file with SWIFT data | `./pkg/data/Interns_2025_SWIFT_CODES.csv` |
 
+> **Note**: All environment variables are loaded from a `.env` file located in the root directory of the project.  
+> Make sure this file exists before running the application locally or via Docker.

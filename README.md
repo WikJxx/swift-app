@@ -172,6 +172,8 @@ MONGO_URI=mongodb://mongo:27017
 MONGO_DB=swiftDB
 MONGO_COLLECTION=swiftCodes
 CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
+HOST=localhost
+PORT=8080
 ```
 
 #### 3. Start the App with Docker Compose
@@ -204,6 +206,8 @@ MONGO_URI=mongodb://localhost:27017
 MONGO_DB=swiftDB
 MONGO_COLLECTION=swiftCodes
 CSV_PATH=./pkg/data/Interns_2025_SWIFT_CODES.csv
+HOST=localhost
+PORT=8080
 ```
 
 #### 3.  Start MongoDB (if not already running)
@@ -420,6 +424,8 @@ The project includes a comprehensive suite of both unit and integration tests to
 | `MONGO_DB`          | MongoDB database name                | `swiftDB`                             |
 | `MONGO_COLLECTION`  | MongoDB collection name              | `swiftCodes`                          |
 | `CSV_PATH`          | Path to the CSV file with SWIFT data | `./pkg/data/Interns_2025_SWIFT_CODES.csv` |
+| `HOST`              | Default host                         | `localhost`                           |
+| `PORT`              | Default port                         | `8080`                               |
 
 > **Note**: All environment variables are loaded from a `.env` file located in the root directory of the project.  
 > Make sure this file exists before running the application locally or via Docker.

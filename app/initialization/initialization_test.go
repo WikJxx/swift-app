@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"swift-app/database"
-	utils "swift-app/internal/testutils"
+	testutils "swift-app/internal/testutils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 func TestInitializeDatabase_WithTestContainer(t *testing.T) {
 	ctx := context.Background()
 
-	uri, err := utils.MongoContainer.ConnectionString(ctx)
+	uri, err := testutils.MongoContainer.ConnectionString(ctx)
 	assert.NoError(t, err)
 
 	err = InitializeDatabase(uri, "swiftTestDB", "swiftCodes")
@@ -26,7 +26,7 @@ func TestInitializeDatabase_WithTestContainer(t *testing.T) {
 func TestImportData_WithTestContainer(t *testing.T) {
 	ctx := context.Background()
 
-	uri, err := utils.MongoContainer.ConnectionString(ctx)
+	uri, err := testutils.MongoContainer.ConnectionString(ctx)
 	assert.NoError(t, err)
 
 	err = InitializeDatabase(uri, "swiftTestDB", "swiftCodes")

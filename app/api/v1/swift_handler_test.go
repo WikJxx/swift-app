@@ -19,7 +19,6 @@ import (
 
 // Unit tests for individual handlers of SWIFT code API endpoints.
 // Tests validate handler behavior, response correctness, and proper error handling.
-
 func clearCollection() {
 	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 }

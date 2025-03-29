@@ -10,7 +10,7 @@ import (
 
 	"swift-app/internal/models"
 	"swift-app/internal/services"
-	utils "swift-app/internal/testutils"
+	testutils "swift-app/internal/testutils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ import (
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-	swiftService := services.NewSwiftCodeService(utils.Collection)
+	swiftService := services.NewSwiftCodeService(testutils.Collection)
 	SetupRoutes(r, swiftService)
 
 	return r
@@ -29,9 +29,9 @@ func setupRouter() *gin.Engine {
 // Tests verify correct HTTP responses, database interactions, and error handling.
 
 func TestGetSwiftCode(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
+	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
 		"swiftCode":     "AAAABBB1XXX",
 		"bankName":      "Test Bank",
 		"address":       "123 Test St",
@@ -55,7 +55,7 @@ func TestGetSwiftCode(t *testing.T) {
 }
 
 func TestGetSwiftCode_NotFound(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	r := setupRouter()
 	w := httptest.NewRecorder()
@@ -71,7 +71,7 @@ func TestGetSwiftCode_NotFound(t *testing.T) {
 }
 
 func TestAddSwiftCode(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	r := setupRouter()
 
@@ -99,9 +99,9 @@ func TestAddSwiftCode(t *testing.T) {
 }
 
 func TestDeleteSwiftCode(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
+	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
 		"swiftCode":     "XYZBANK1XXX",
 		"bankName":      "XYZ Bank",
 		"countryISO2":   "UK",

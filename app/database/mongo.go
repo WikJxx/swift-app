@@ -80,15 +80,14 @@ func CloseMongoDB() error {
 func GetCollection() *mongo.Collection {
 	return collection
 }
-func SaveHeadquarters(hqList []models.SwiftCode) (int, int, error) {
-	hqAdded := 0
-	hqSkipped := 0
+func SaveHeadquarters(hqList []models.SwiftCode) (models.ImportSummary, error) {
+	summary := models.ImportSummary{}
 
 	for _, hq := range hqList {
 		filter := bson.M{utils.FieldSwiftCode: hq.SwiftCode}
 		count, err := collection.CountDocuments(context.Background(), filter)
 		if err != nil {
-			return hqAdded, hqSkipped, fmt.Errorf("error checking HQ existence: %v", err)
+			return summary, fmt.Errorf("error checking HQ existence: %v", err)
 		}
 
 		if count == 0 {
@@ -102,22 +101,19 @@ func SaveHeadquarters(hqList []models.SwiftCode) (int, int, error) {
 				utils.FieldBranches:      []interface{}{},
 			})
 			if err != nil {
-				return hqAdded, hqSkipped, fmt.Errorf("failed to insert HQ: %v", err)
+				return summary, fmt.Errorf("failed to insert HQ: %v", err)
 			}
-			hqAdded++
+			summary.HQAdded++
 		} else {
-			hqSkipped++
+			summary.HQSkipped++
 		}
 	}
 
-	return hqAdded, hqSkipped, nil
+	return summary, nil
 }
 
-func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
-	branchesAdded := 0
-	branchesDuplicate := 0
-	branchesMissingHQ := 0
-	branchesSkipped := 0
+func SaveBranches(branches []models.SwiftCode) (models.ImportSummary, error) {
+	summary := models.ImportSummary{}
 
 	for _, branch := range branches {
 		hqCode := branch.SwiftCode[:8] + "XXX"
@@ -126,8 +122,8 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 		var hq bson.M
 		err := collection.FindOne(context.Background(), filter).Decode(&hq)
 		if err != nil {
-			branchesMissingHQ++
-			branchesSkipped++
+			summary.BranchesMissingHQ++
+			summary.BranchesSkipped++
 			continue
 		}
 
@@ -146,8 +142,8 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 			}
 		}
 		if duplicate {
-			branchesDuplicate++
-			branchesSkipped++
+			summary.BranchesDuplicate++
+			summary.BranchesSkipped++
 			continue
 		}
 
@@ -161,10 +157,10 @@ func SaveBranches(branches []models.SwiftCode) (int, int, int, int, error) {
 
 		_, err = collection.UpdateOne(context.Background(), filter, update)
 		if err != nil {
-			return branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, fmt.Errorf("failed to add branch: %v", err)
+			return summary, fmt.Errorf("failed to add branch: %v", err)
 		}
-		branchesAdded++
+		summary.BranchesAdded++
 	}
 
-	return branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, nil
+	return summary, nil
 }

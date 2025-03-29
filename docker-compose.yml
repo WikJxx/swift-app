@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build:
@@ -14,10 +12,10 @@ services:
       - mongo
     restart: always
     command: >
-      sh -c "until nc -z -v -w30 mongo 27017; do echo 'Waiting for MongoDB...'; sleep 5; done; ./swift-app"
+      sh -c "until nc -z -v -w30 mongo 27017; do echo 'Waiting for MongoDB...'; sleep 2; done; ./swift-app"
 
   mongo:
-    image: mongo:latest
+    image: mongo:8
     container_name: mongo
     ports:
       - "27017:27017"

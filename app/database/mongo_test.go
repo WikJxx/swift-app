@@ -1,3 +1,5 @@
+// Package database provides functionality for MongoDB initialization,
+// checking collection state, and saving headquarters and branch records.
 package database
 
 import (
@@ -6,32 +8,29 @@ import (
 	"time"
 
 	"swift-app/internal/models"
-	utils "swift-app/internal/testutils"
+	testutils "swift-app/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Package database contains integration tests for MongoDB-related functions:
-// verifying database initialization, collection state checks, and saving HQ and branch SWIFT codes.
-
 func clearCollection() {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 }
 
 func TestInitMongoDB(t *testing.T) {
 	clearCollection()
 
-	uri, err := utils.MongoContainer.ConnectionString(context.Background())
+	uri, err := testutils.MongoContainer.ConnectionString(context.Background())
 	assert.NoError(t, err, "Failed to retrieve MongoDB URI")
 
-	err = InitMongoDB(uri, "swiftDB", "swiftCodes")
+	err = InitMongoDB(uri, "swiftDB_test", "swiftCodes")
 	assert.NoError(t, err, "InitMongoDB should not return an error")
 
 	assert.NotNil(t, collection, "Collection should not be nil")
 
-	indexes, err := utils.Collection.Indexes().List(context.Background())
+	indexes, err := testutils.Collection.Indexes().List(context.Background())
 	assert.NoError(t, err, "Failed to list indexes")
 
 	var indexNames []string
@@ -70,15 +69,15 @@ func TestSaveHeadquarters(t *testing.T) {
 		},
 	}
 
-	hqAdded, hqSkipped, err := SaveHeadquarters(hqs)
+	summary, err := SaveHeadquarters(hqs)
 	assert.NoError(t, err, "SaveHeadquarters should not return an error")
 
-	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
+	count, err := testutils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count, "Expected 1 HQ in the collection")
 
-	assert.Equal(t, 1, hqAdded, "Expected 1 HQ added")
-	assert.Equal(t, 0, hqSkipped, "Expected 0 skipped HQ")
+	assert.Equal(t, 1, summary.HQAdded, "Expected 1 HQ added")
+	assert.Equal(t, 0, summary.HQSkipped, "Expected 0 skipped HQ")
 }
 
 func TestSaveBranches(t *testing.T) {
@@ -93,10 +92,10 @@ func TestSaveBranches(t *testing.T) {
 		IsHeadquarter: true,
 	}
 
-	_, _, err := SaveHeadquarters([]models.SwiftCode{hq})
+	_, err := SaveHeadquarters([]models.SwiftCode{hq})
 	assert.NoError(t, err, "SaveHeadquarters should not return an error")
 
-	count, err := utils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
+	count, err := testutils.Collection.CountDocuments(context.Background(), bson.M{"isHeadquarter": true})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), count, "Expected 1 HQ in the collection")
 
@@ -109,7 +108,7 @@ func TestSaveBranches(t *testing.T) {
 		IsHeadquarter: false,
 	}
 
-	branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := SaveBranches([]models.SwiftCode{branch})
+	summary, err := SaveBranches([]models.SwiftCode{branch})
 	assert.NoError(t, err, "SaveBranches should not return an error")
 
 	var result bson.M
@@ -138,8 +137,8 @@ func TestSaveBranches(t *testing.T) {
 	}
 	assert.True(t, branchFound, "Expected 1 branch under HQ")
 
-	assert.Equal(t, 1, branchesAdded, "Expected 1 branch added")
-	assert.Equal(t, 0, branchesDuplicate, "Expected 0 duplicate branches")
-	assert.Equal(t, 0, branchesMissingHQ, "Expected 0 missing HQ")
-	assert.Equal(t, 0, branchesSkipped, "Expected 0 skipped branches")
+	assert.Equal(t, 1, summary.BranchesAdded, "Expected 1 branch added")
+	assert.Equal(t, 0, summary.BranchesDuplicate, "Expected 0 duplicate branches")
+	assert.Equal(t, 0, summary.BranchesMissingHQ, "Expected 0 missing HQ")
+	assert.Equal(t, 0, summary.BranchesSkipped, "Expected 0 skipped branches")
 }

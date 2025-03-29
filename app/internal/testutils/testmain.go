@@ -23,7 +23,7 @@ func init() {
 	ctx := context.Background()
 	var err error
 
-	MongoContainer, err = mongodb.Run(ctx, "mongo:latest")
+	MongoContainer, err = mongodb.Run(ctx, "mongo:8")
 	if err != nil {
 		panic("Failed to start MongoDB container: " + err.Error())
 	}
@@ -38,5 +38,5 @@ func init() {
 		panic("Failed to connect to MongoDB: " + err.Error())
 	}
 
-	Collection = MongoClient.Database("swiftDB").Collection("swiftCodes")
+	Collection = MongoClient.Database("swiftDB_test").Collection("swiftCodes")
 }

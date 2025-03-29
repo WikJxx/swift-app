@@ -9,7 +9,7 @@ import (
 	router "swift-app/cmd/router"
 	"swift-app/internal/models"
 	"swift-app/internal/services"
-	utils "swift-app/internal/testutils"
+	testutils "swift-app/internal/testutils"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -17,21 +17,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// Package integration contains integration tests verifying the complete HTTP request-response cycle for SWIFT code API endpoints.
-
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 
-	swiftService := services.NewSwiftCodeService(utils.Collection)
+	swiftService := services.NewSwiftCodeService(testutils.Collection)
 
 	router.SetupRoutes(r, swiftService)
 
 	return r
 }
 func TestSaveAndRetrieveSwiftCode(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	service := services.NewSwiftCodeService(utils.Collection)
+	service := services.NewSwiftCodeService(testutils.Collection)
 
 	swiftCode := &models.SwiftCode{
 		SwiftCode:     "AAAABBB1XXX",
@@ -50,7 +48,7 @@ func TestSaveAndRetrieveSwiftCode(t *testing.T) {
 }
 
 func TestAddSwiftCodeEndpoint(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
 	r := setupRouter()
 
@@ -77,14 +75,14 @@ func TestAddSwiftCodeEndpoint(t *testing.T) {
 	assert.Equal(t, "headquarter SWIFT code added successfully", response["message"], "Expected success message")
 
 	var result models.SwiftCode
-	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBB1XXX"}).Decode(&result)
+	err = testutils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "AAAABBB1XXX"}).Decode(&result)
 	assert.NoError(t, err, "Failed to retrieve SWIFT code from database")
 	assert.Equal(t, "Test Bank", result.BankName, "Expected bank name 'Test Bank'")
 }
 func TestGetSwiftCodeEndpoint(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
+	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
 		"swiftCode":     "AAAABBB1XXX",
 		"bankName":      "Test Bank",
 		"address":       "123 Test St",
@@ -107,9 +105,9 @@ func TestGetSwiftCodeEndpoint(t *testing.T) {
 	assert.Equal(t, "Test Bank", response.BankName, "Expected bank name 'Test Bank'")
 }
 func TestDeleteSwiftCodeEndpoint(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	_, err := utils.Collection.InsertOne(context.Background(), bson.M{
+	_, err := testutils.Collection.InsertOne(context.Background(), bson.M{
 		"swiftCode":     "XYZBANK1XXX",
 		"bankName":      "XYZ Bank",
 		"countryISO2":   "UK",
@@ -131,13 +129,13 @@ func TestDeleteSwiftCodeEndpoint(t *testing.T) {
 	assert.NoError(t, err, "Failed to unmarshal response")
 	assert.Equal(t, "deleted hadquarter XYZBANK1XXX and its branches", response["message"], "Expected deletion message")
 
-	err = utils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANK1XXX"}).Decode(&bson.M{})
+	err = testutils.Collection.FindOne(context.Background(), bson.M{"swiftCode": "XYZBANK1XXX"}).Decode(&bson.M{})
 	assert.Error(t, err, "SWIFT code should be removed from the database")
 }
 func TestGetSwiftCodesByCountryEndpoint(t *testing.T) {
-	_, _ = utils.Collection.DeleteMany(context.Background(), bson.M{})
+	_, _ = testutils.Collection.DeleteMany(context.Background(), bson.M{})
 
-	_, err := utils.Collection.InsertMany(context.Background(), []interface{}{
+	_, err := testutils.Collection.InsertMany(context.Background(), []interface{}{
 		bson.M{
 			"swiftCode":     "AAAABBB1XXX",
 			"bankName":      "Bank A",

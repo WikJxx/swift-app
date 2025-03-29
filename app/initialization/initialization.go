@@ -32,22 +32,24 @@ func ImportData(csvPath string) (*models.ImportSummary, error) {
 		}
 	}
 
-	hqAdded, hqSkipped, err := database.SaveHeadquarters(hqList)
+	hqSummary, err := database.SaveHeadquarters(hqList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save HQs: %v", err)
 	}
 
-	branchesAdded, branchesDuplicate, branchesMissingHQ, branchesSkipped, err := database.SaveBranches(branchList)
+	branchSummary, err := database.SaveBranches(branchList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save branches: %v", err)
 	}
 
-	return &models.ImportSummary{
-		HQAdded:           hqAdded,
-		HQSkipped:         hqSkipped,
-		BranchesAdded:     branchesAdded,
-		BranchesDuplicate: branchesDuplicate,
-		BranchesMissingHQ: branchesMissingHQ,
-		BranchesSkipped:   branchesSkipped,
-	}, nil
+	summary := &models.ImportSummary{
+		HQAdded:           hqSummary.HQAdded,
+		HQSkipped:         hqSummary.HQSkipped,
+		BranchesAdded:     branchSummary.BranchesAdded,
+		BranchesDuplicate: branchSummary.BranchesDuplicate,
+		BranchesMissingHQ: branchSummary.BranchesMissingHQ,
+		BranchesSkipped:   branchSummary.BranchesSkipped,
+	}
+
+	return summary, nil
 }
